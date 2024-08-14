@@ -1,0 +1,17 @@
+version: "3.3"
+services:
+  rhasspy:
+    image: rhasspy/rhasspy
+    container_name: rhasspy
+    restart: unless-stopped
+    ports:
+      - "12101:12101/tcp"
+      - "12183:12183/tcp"
+    command:
+      - -p
+      - fr
+    volumes:
+      - ./config:/root/.config/rhasspy:rw
+    labels:
+      - "traefik.enable=true"
+
