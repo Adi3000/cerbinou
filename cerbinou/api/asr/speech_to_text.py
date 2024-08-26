@@ -1,0 +1,41 @@
+import requests
+import random
+import string
+import logging
+import os
+
+WHISPER_URL = os.getenv("ASR_URL", "http://localhost:9000/asr")
+WHISPER_FALLBACK_URL = os.getenv("ASR_FALLBACK_URL", "http://localhost:9000/asr")
+
+
+logger = logging.getLogger(__name__)
+
+def parse_audio(audio_data: bytes):
+    # Define the file path (you can customize the filename)
+    random_filename = ''.join(random.choices(string.ascii_letters + string.digits, k=12)) + ".wav"
+    files_to_forward = {
+        "audio_file": (random_filename,audio_data, "audio/wav")
+    }
+    whisper_query_param = {
+        "encode" : "true",
+        "task": "transcribe",
+        "language" : "fr",
+        "word_timestamps" : False,
+        "output" : "txt"
+    }
+    try:
+        response = requests.post(url=WHISPER_URL, files=files_to_forward, data=whisper_query_param, timeout=(3,30))
+        logging.info("whisper response : %s", response.text)
+    except requests.exceptions.Timeout:
+        response = fetch_fallback(audio_data)
+    except requests.exceptions.ConnectionError:
+        response = fetch_fallback(audio_data)
+        
+    logging.info("Rhaspy response : %s", response.text)
+    return {"text": response.text}
+
+
+def fetch_fallback(audio_data: bytes):
+    rhasspy_headers = {"Content-Type": "audio/wav"}
+    response = requests.post(url=WHISPER_FALLBACK_URL, data=audio_data, headers=rhasspy_headers)
+    return response

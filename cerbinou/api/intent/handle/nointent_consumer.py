@@ -1,6 +1,6 @@
 import paho.mqtt.client as mqtt
 from paho.mqtt.client import MQTTMessage, Client
-from command.intent import NoIntent, ParsedIntent, IntentType, IntentMQTT
+from intent.models import NoIntent, ParsedIntent, IntentType, IntentMQTT
 import json
 import logging
 
