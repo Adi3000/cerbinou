@@ -4,8 +4,8 @@ import string
 import logging
 import os
 
-WHISPER_URL = os.getenv("ASR_URL", "http://localhost:9000/asr")
-WHISPER_FALLBACK_URL = os.getenv("ASR_FALLBACK_URL", "http://localhost:9000/asr")
+WHISPER_URL = os.getenv("WHISPER_URL", "http://localhost:9000/asr")
+WHISPER_FALLBACK_URL = os.getenv("WHISPER_FALLBACK_URL", "http://localhost:9000/asr")
 
 
 logger = logging.getLogger(__name__)
@@ -31,11 +31,11 @@ def parse_audio(audio_data: bytes):
     except requests.exceptions.ConnectionError:
         response = fetch_fallback(audio_data)
         
-    logging.info("Rhaspy response : %s", response.text)
     return {"text": response.text}
 
 
 def fetch_fallback(audio_data: bytes):
     rhasspy_headers = {"Content-Type": "audio/wav"}
     response = requests.post(url=WHISPER_FALLBACK_URL, data=audio_data, headers=rhasspy_headers)
+    logging.info("fallback response : %s", response.text)
     return response
