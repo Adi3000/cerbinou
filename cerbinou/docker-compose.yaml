@@ -1,0 +1,33 @@
+version: "3.8"
+services:
+  melotts:
+    image: timhagel/melotts-api-server
+    container_name: melotts
+    restart: unless-stopped
+    environment:
+      - "DEFAULT_SPEED=1"
+      - "DEFAULT_SPEAKER_ID=FR"
+      - "DEFAULT_LANGUAGE=FR"
+    ports:
+      - "8381:8080/tcp"
+    command:
+      - python 
+      - app.py
+    volumes:
+      - /mnt/e/workspace/my-scripts/cerbinou/tts:/tts:rw
+  whisper:
+    image: onerahmet/openai-whisper-asr-webservice:latest-gpu
+    container_name: whisper
+    environment:
+      - "ASR_MODEL=base"
+      - "ASR_ENGINE=openai_whisper"
+    ports:
+      - "9000:9000/tcp"  
+    runtime: nvidia
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: 1
+              capabilities: [gpu]
