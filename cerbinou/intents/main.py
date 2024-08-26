@@ -12,7 +12,7 @@ import os
 
 CERBINOU_PORT = int(os.getenv("CERBINOU_PORT", "8000"))
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
-MQTT_PORT = int(os.getenv("MQTT_HOST", "12183"))
+MQTT_PORT = int(os.getenv("MQTT_PORT", "12183"))
 
 logging.basicConfig(
     level=logging.INFO,
@@ -23,16 +23,14 @@ logger = logging.getLogger(__name__)
 app = FastAPI()
 
 @app.post("/api/command")
-def execute_command(request: IntentRequest): 
+def execute_command(request: IntentRequest):
     logger.info("Message output %s", request.json())
-    match request.intent.name:
-        case "GetTime":
-            return IntentResponse(speech=get_time_speech())
-        case "Prompt":
-            return IntentResponse(speech=get_prompt_speech(request.text))
-        case _:
-            return IntentResponse(speech=get_misunderstood_speech())
-
+    if request.intent.name == "GetTime":
+        return IntentResponse(speech=get_time_speech())
+    elif request.intent.name == "Prompt":
+        return IntentResponse(speech=get_prompt_speech(request.text))
+    else:
+        return IntentResponse(speech=get_misunderstood_speech())
 
 if __name__ == "__main__":
     no_intent_mqtt = nointent_connection(MQTT_HOST, MQTT_PORT)
