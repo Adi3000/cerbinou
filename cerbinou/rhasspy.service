@@ -1,0 +1,10 @@
+[Unit]
+Description=Rhasspy service
+
+[Service]
+ExecStart=/usr/bin/rhasspy -p fr
+Restart=always
+User=pi
+
+[Install]
+WantedBy=multi-user.target

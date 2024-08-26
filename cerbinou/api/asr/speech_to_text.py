@@ -25,17 +25,12 @@ def parse_audio(audio_data: bytes):
     }
     try:
         response = requests.post(url=WHISPER_URL, files=files_to_forward, data=whisper_query_param, timeout=(3,30))
-        logging.info("whisper response : %s", response.text)
+        logging.info("whisper [%s] response : %s", WHISPER_URL, response.text)
     except requests.exceptions.Timeout:
-        response = fetch_fallback(audio_data)
+        response = requests.post(url=WHISPER_FALLBACK_URL, files=files_to_forward, data=whisper_query_param)
     except requests.exceptions.ConnectionError:
-        response = fetch_fallback(audio_data)
-        
-    return {"text": response.text}
+        response = requests.post(url=WHISPER_FALLBACK_URL, files=files_to_forward, data=whisper_query_param)
+
+    return response.text
 
 
-def fetch_fallback(audio_data: bytes):
-    rhasspy_headers = {"Content-Type": "audio/wav"}
-    response = requests.post(url=WHISPER_FALLBACK_URL, data=audio_data, headers=rhasspy_headers)
-    logging.info("fallback response : %s", response.text)
-    return response

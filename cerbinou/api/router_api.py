@@ -1,5 +1,6 @@
 from typing import Dict, Optional
 from fastapi import FastAPI, Request
+from fastapi.responses import PlainTextResponse
 import uvicorn
 from intent.handle.commands import get_time_speech, get_misunderstood_speech, get_prompt_speech
 from intent.classification.analyze import analyze_text
@@ -20,7 +21,7 @@ logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'  # Define the log format
 )
-    
+ 
 logger = logging.getLogger(__name__)
 router = FastAPI()
 
@@ -28,7 +29,7 @@ router = FastAPI()
 async def health_check():
     return {"status": "ok"}
 
-@router.post("/api/asr/text")
+@router.post("/api/asr/text", response_class=PlainTextResponse)
 async def asr_decode(request: Request):
     logging.info("Type : %s", request.headers.get('Content-Type'))
     if request.headers.get('Content-Type') != 'audio/wav' and request.headers.get('Content-Type') != 'audio/wave':
@@ -36,6 +37,11 @@ async def asr_decode(request: Request):
     # Read the binary data from the request body
     audio_data = await request.body()
     return parse_audio(audio_data)
+
+@router.post("/api/asr/transcript")
+async def asr_transcript(request: Request):
+    transcripted_text = await asr_decode(request)
+    return { "text": transcripted_text, "transcribe_seconds": 0 }
 
 @router.post("/api/intent/text")
 async def text_decode(request: Request):
