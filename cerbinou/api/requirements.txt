@@ -2,3 +2,5 @@ fastapi
 uvicorn
 paho-mqtt
 requests
+websockets
+asyncio

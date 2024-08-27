@@ -1,11 +1,13 @@
 from typing import Dict, Optional
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, Request, Response
 from fastapi.responses import PlainTextResponse
 import uvicorn
 from intent.handle.commands import get_time_speech, get_misunderstood_speech, get_prompt_speech
 from intent.classification.analyze import analyze_text
 from intent.models import IntentResponse, IntentRequest
 from intent.handle.nointent_consumer import nointent_connection
+from hotword import handler
+from tts.openvoice import speech
 from asr.speech_to_text import parse_audio
 from utils import LogRequestsMiddleware
 import logging
@@ -61,18 +63,33 @@ async def execute_command(request: IntentRequest):
     else:
         return IntentResponse(speech=get_misunderstood_speech())
 
+
+@router.post("/api/tts")
+async def execute_command(request: Request):
+    wav_data = speech(request.text)
+    return Response(content=wav_data, media_type="audio/wav")
+
 if __name__ == "__main__":
     no_intent_mqtt: Optional[any] = None
+    wake_handler: Optional[any] = None
     no_intent_consumer: Optional[any]
     try:
         no_intent_mqtt = nointent_connection(MQTT_HOST, MQTT_PORT)
         no_intent_consumer = threading.Thread(target=no_intent_mqtt.loop_forever)
         no_intent_consumer.start()
+#        wake_handler = threading.Thread(target=handler.wake)
+#        wake_handler.start()
+        
     except ConnectionRefusedError:
         logging.warning("Cannot connect to %s:%d", MQTT_HOST, MQTT_PORT)
     router.add_middleware(LogRequestsMiddleware)
     uvicorn.run("router_api:router", host="0.0.0.0", port=CERBINOU_PORT, reload=False, log_level="info")
+    
+    
+    handler.running = False
     if no_intent_mqtt:
         no_intent_mqtt.disconnect()
         no_intent_consumer.join()
+
+#    wake_handler.join()
     sys.exit(0)
