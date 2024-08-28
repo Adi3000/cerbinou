@@ -1,9 +1,10 @@
 import requests
 import logging  
 import os
+from audit import telegram
 
-LLAMA_PORT = int(os.getenv("LLAMA_PORT", "8080"))
-LLAMA_HOST = os.getenv("LLAMA_HOST", "localhost")
+LLAMA_URL = os.getenv("LLAMA_URL", "http://localhost:8080")
+LLAMA_FAILBACK_URL = os.getenv("LLAMA_FAILBACK_URL", "http://localhost:8080")
 
 
 logger = logging.getLogger(__name__)
@@ -49,9 +50,10 @@ prompt_context =  "Bonjour, comment ça va ?<|eot_id|><|start_header_id|>cerbino
 def get_prompt_response(prompt: str):
     global prompt_context
     add_prompt_to_context(prompt)
-    response= requests.post(f"http://{LLAMA_HOST}:{LLAMA_PORT}/completion", json= {"prompt": purge_context(prompt_context)})
     logger.info("Response output %s", response.json())
     json_response = response.json().get("content")
+    response= requests.post(f"http://{LLAMA_URL}/completion", json= {"prompt": purge_context(prompt_context)})
+    telegram.send_message(text=prompt, quote=True)
     add_answer_to_context(json_response)
     return json_response
 

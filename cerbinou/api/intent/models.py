@@ -8,7 +8,7 @@ class IntentResponse(BaseModel):
     speech: Speech
     
 class IntentTypeRequest(BaseModel):
-    name: str
+    name: Optional[str]
     confidence: float
     
 class IntentRequest(BaseModel):

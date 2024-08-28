@@ -66,7 +66,9 @@ async def execute_command(request: IntentRequest):
 
 @router.post("/api/tts")
 async def execute_command(request: Request):
-    wav_data = speech(request.text)
+    speech_data = await request.body()
+    speech_text = speech_data.decode()
+    wav_data = speech(speech_text)
     return Response(content=wav_data, media_type="audio/wav")
 
 if __name__ == "__main__":

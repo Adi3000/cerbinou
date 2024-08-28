@@ -15,6 +15,7 @@ services:
     environment:
       - "SPEAKERS=cerbinou"
       - "MODEL_LANGUAGES_V2=FR"
+      - "MODEL_LANGUAGES_V1="
       - "DEFAULT_LANGUAGE=FR"
       - "LOG_LEVEL=INFO"
     ports:
