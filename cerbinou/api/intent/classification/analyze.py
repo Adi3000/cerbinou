@@ -1,8 +1,12 @@
 from intent.models import IntentRequest, IntentTypeRequest
-import re
+import logging
+
+logger = logging.getLogger(__name__)
 
 def analyze_text(text: str):
-    if re.sub(r"[a-zA-Z0-9]","", text):
+    cleared_text = ''.join(filter(str.isalnum, text))
+    logger.info("String cleared was <%s>", cleared_text)
+    if len(cleared_text) == 0:
         return IntentRequest(
             intent=IntentTypeRequest(name= None, confidence=1.0), 
             text=text,
