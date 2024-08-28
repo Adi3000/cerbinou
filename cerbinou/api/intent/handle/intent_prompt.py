@@ -50,7 +50,14 @@ prompt_context =  "Bonjour, comment ça va ?<|eot_id|><|start_header_id|>cerbino
 def get_prompt_response(prompt: str):
     global prompt_context
     add_prompt_to_context(prompt)
-    response= requests.post(f"http://{LLAMA_URL}/completion", json= {"prompt": purge_context(prompt_context)})
+    try:
+        response= requests.post(f"{LLAMA_URL}/completion", json= {"prompt": purge_context(prompt_context)}, timeout=(2,30))
+    except requests.exceptions.Timeout:
+        response = requests.post(url=f"{LLAMA_FAILBACK_URL}/completion", json= {"prompt": purge_context(prompt_context)})
+        logging.info("timeout from [%s] response from : %s", f"{LLAMA_URL}", LLAMA_FAILBACK_URL)
+    except requests.exceptions.ConnectionError:
+        response = requests.post(url=f"{LLAMA_FAILBACK_URL}/completion", json= {"prompt": purge_context(prompt_context)})
+        logging.info("connection refuse to[%s] response from : %s",LLAMA_URL, LLAMA_FAILBACK_URL)
     logger.info("Response output %s", response.json())
     json_response = response.json().get("content")
     add_answer_to_context(json_response)
