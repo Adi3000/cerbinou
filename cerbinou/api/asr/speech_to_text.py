@@ -4,8 +4,8 @@ import string
 import logging
 import os
 
-WHISPER_URL = os.getenv("WHISPER_URL", "http://localhost:9000/asr")
-WHISPER_FAILBACK_URL = os.getenv("WHISPER_FAILBACK_URL", "http://localhost:9000/asr")
+WHISPER_URL = os.getenv("WHISPER_URL", "http://localhost:9000")
+WHISPER_FAILBACK_URL = os.getenv("WHISPER_FAILBACK_URL", "http://localhost:9000")
 
 
 logger = logging.getLogger(__name__)
@@ -24,12 +24,12 @@ def parse_audio(audio_data: bytes):
         "output" : "txt"
     }
     try:
-        response = requests.post(url=WHISPER_URL, files=files_to_forward, data=whisper_query_param, timeout=(2,30))
-        logging.info("whisper [%s] response : %s", WHISPER_URL, response.text)
+        response = requests.post(url=f"{WHISPER_URL}/asr", files=files_to_forward, data=whisper_query_param, timeout=(2,30))
+        logging.info("whisper [%s] response : %s", f"{WHISPER_URL}/asr", response.text)
     except requests.exceptions.Timeout:
-        response = requests.post(url=WHISPER_FAILBACK_URL, files=files_to_forward, data=whisper_query_param)
+        response = requests.post(url=f"{WHISPER_FAILBACK_URL}/asr", files=files_to_forward, data=whisper_query_param)
     except requests.exceptions.ConnectionError:
-        response = requests.post(url=WHISPER_FAILBACK_URL, files=files_to_forward, data=whisper_query_param)
+        response = requests.post(url=f"{WHISPER_FAILBACK_URL}/asr", files=files_to_forward, data=whisper_query_param)
 
     return response.text
 
