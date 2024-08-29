@@ -3,7 +3,7 @@ services:
   rhasspy:
     image: rhasspy/rhasspy
     container_name: rhasspy
-    restart: unless-stopped
+    restart: always
     ports:
       - "12101:12101/tcp"
       - "12183:12183/tcp"
@@ -15,3 +15,60 @@ services:
     labels:
       - "traefik.enable=true"
 
+  whisper:
+    image: onerahmet/openai-whisper-asr-webservice:latest
+    container_name: whisper
+    environment:
+      - ASR_MODEL=base
+      - ASR_ENGINE=openai_whisper
+    ports:
+      - "9000:9000/tcp"
+    labels:
+      - "traefik.enable=true"
+
+  openvoice:
+    image: adi3000/openvoice-api-python:latest-cpu
+    container_name: openvoice
+    restart: always
+    environment:
+      - "SPEAKERS=cerbinou"
+      - "MODEL_LANGUAGES_V2=FR"
+      - "MODEL_LANGUAGES_V1="
+      - "DEFAULT_LANGUAGE=FR"
+      - "LOG_LEVEL=INFO"
+    command:
+      - python3
+      - app.py
+    volumes:
+      - /home/adi/cerbinou/tts/speakers:/app/speakers:rw
+      - /home/adi/cerbinou/tts/processed:/app/processed:rw
+    ports:
+      - "5050:5000/tcp"
+    labels:
+      - "traefik.enable=true"
+
+  llamacpp:
+    image: adi3000/llama.cpp:server
+    container_name: llamacpp
+    restart: always
+    command:
+      - -m
+      - /cerbinou/llamacpp/models/Meta-Llama-3.1-8B-Instruct-Q6_K.gguf
+      - --top-p
+      - "0.6"
+      - --temp
+      - "0.9"
+      - --repeat-penalty
+      - "1.7"
+      - --penalize-nl
+      - --prompt-cache
+      - /cerbinou/llamacpp/cache/prompt-cache.bin
+      - --conversation
+      - --system-prompt-file
+      - /cerbinou/llamacpp/prompt-ceribinou.txt
+    volumes:
+      - /home/adi/cerbinou:/cerbinou:rw
+    ports:
+      - "8321:8080/tcp"
+    labels:
+      - "traefik.enable=true"
