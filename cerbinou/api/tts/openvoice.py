@@ -24,7 +24,7 @@ def speech(text: str):
     except requests.exceptions.ConnectionError:
         response = requests.post(url=f"{OPENVOICE_API_FAILBACK_URL}/v2/generate-audio", json=openvoice_param)
         logging.info("connection refuse to[%s] response from : %s",OPENVOICE_API_URL, OPENVOICE_API_FAILBACK_URL)
-    telegram.send_message(text=text, quote=True)
+    telegram.send_message(text=text, quote=False)
     return response.content
 
 
