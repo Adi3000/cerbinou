@@ -5,7 +5,7 @@ import logging
 import os
 
 WHISPER_URL = os.getenv("WHISPER_URL", "http://localhost:9000")
-WHISPER_FAILBACK_URL = os.getenv("WHISPER_FAILBACK_URL", "http://localhost:9000")
+WHISPER_FAILBACK_URL = os.getenv("WHISPER_FAILBACK_URL", "http://cerbinou.adi3000.com:9000")
 
 
 logger = logging.getLogger(__name__)
@@ -28,8 +28,10 @@ def parse_audio(audio_data: bytes):
         logging.info("whisper [%s] response : %s", f"{WHISPER_URL}/asr", response.text)
     except requests.exceptions.Timeout:
         response = requests.post(url=f"{WHISPER_FAILBACK_URL}/asr", files=files_to_forward, data=whisper_query_param)
+        logging.info("Timeout whisper fallback [%s] response : %s", f"{WHISPER_URL}/asr", response.text)
     except requests.exceptions.ConnectionError:
         response = requests.post(url=f"{WHISPER_FAILBACK_URL}/asr", files=files_to_forward, data=whisper_query_param)
+        logging.info("Refused connection whisper fallback [%s] response : %s", f"{WHISPER_URL}/asr", response.text)
 
     return response.text
 

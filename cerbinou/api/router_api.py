@@ -33,7 +33,7 @@ async def health_check():
 
 @router.post("/api/asr/text", response_class=PlainTextResponse)
 async def asr_decode(request: Request):
-    logging.info("Type : %s", request.headers.get('Content-Type'))
+    logging.info("Received asr text request")
     if request.headers.get('Content-Type') != 'audio/wav' and request.headers.get('Content-Type') != 'audio/wave':
         return {"error": "Invalid content type. Only 'audio/wav' is accepted."}
     # Read the binary data from the request body
@@ -42,12 +42,13 @@ async def asr_decode(request: Request):
 
 @router.post("/api/asr/transcript")
 async def asr_transcript(request: Request):
+    logging.info("Received transcript request")
     transcripted_text = await asr_decode(request)
     return { "text": transcripted_text, "transcribe_seconds": 0 }
 
 @router.post("/api/intent/text")
 async def text_decode(request: Request):
-    logging.info("Type : %s", request.headers.get('Content-Type'))
+    logging.info("Received intent request")
     # Read the binary data from the request body
     intent_text_data = await request.body()
     intent_text = intent_text_data.decode()
@@ -55,7 +56,7 @@ async def text_decode(request: Request):
 
 @router.post("/api/command")
 async def execute_command(request: IntentRequest):
-    logger.info("Message output %s", request.json())
+    logger.info("Intent command %s", request.json())
     if request.intent.name == "GetTime":
         return IntentResponse(speech=get_time_speech())
     elif request.intent.name == "Prompt":
@@ -68,6 +69,7 @@ async def execute_command(request: IntentRequest):
 async def execute_command(request: Request):
     speech_data = await request.body()
     speech_text = speech_data.decode()
+    logger.info("Speech request <%s>", speech_text)
     wav_data = speech(speech_text)
     return Response(content=wav_data, media_type="audio/wav")
 

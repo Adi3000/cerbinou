@@ -3,7 +3,7 @@ services:
   openvoice-api:
     image: openvoice-api-python
     container_name: openvoice
-    restart: always
+    restart: unless-stopped
     runtime: nvidia
     deploy:
       resources:
@@ -29,7 +29,7 @@ services:
   whisper:
     image: onerahmet/openai-whisper-asr-webservice:latest-gpu
     container_name: whisper
-    restart: always
+    restart: unless-stopped
     environment:
       - "ASR_MODEL=base"
       - "ASR_ENGINE=openai_whisper"

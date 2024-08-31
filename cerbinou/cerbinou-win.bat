@@ -14,4 +14,4 @@ netsh interface portproxy add v4tov4 listenport=9000 listenaddress=0.0.0.0 conne
 netsh advfirewall firewall add rule name="Allow Port 9000" dir=in action=allow protocol=TCP localport=9000
 
 wsl docker info
-wsl docker compose -f /mnt/e/workspace/my-scripts/cerbinou/docker-compose.yaml up -d
+wsl docker compose -f /mnt/e/workspace/my-scripts/cerbinou/docker-compose.yaml up
