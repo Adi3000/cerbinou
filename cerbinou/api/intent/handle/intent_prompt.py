@@ -5,6 +5,7 @@ from audit import telegram
 
 LLAMA_URL = os.getenv("LLAMA_URL", "http://localhost:8080")
 LLAMA_FAILBACK_URL = os.getenv("LLAMA_FAILBACK_URL", "http://localhost:8080")
+LLAMA_MAX_WORDS= int(os.getenv("LLAMA_MAX_WORDS","1000"))
 
 
 logger = logging.getLogger(__name__)
@@ -74,7 +75,7 @@ def add_answer_to_context(answer: str):
     
 def check_nb_token(context: str):
     sanitized_text = context.replace("<|eot_id|><|start_header_id|>cerbinou<|end_header_id|>", "").replace("<|eot_id|><|start_header_id|>user<|end_header_id|>", "")
-    return len(sanitized_text.split()) <= 2000
+    return len(sanitized_text.split()) <= LLAMA_MAX_WORDS
 
 def purge_context(context: str):
     if check_nb_token(context):
