@@ -1,4 +1,3 @@
-import asyncio
 import requests
 import logging  
 import re
@@ -66,7 +65,7 @@ def get_prompt_response(prompt: str):
         logging.info("connection refuse to[%s] response from : %s",LLAMA_URL, LLAMA_FAILBACK_URL)
         
     logger.info("Response output %s", response.json())
-    asyncio.create_task(process_stream_reponse(response))
+    process_stream_reponse(response)
     telegram.send_message(text=prompt, quote=True)
 
 
@@ -93,7 +92,7 @@ def purge_context(context: str):
             return context
 
 
-async def process_stream_reponse(response: requests.Response):
+def process_stream_reponse(response: requests.Response):
     text_response = "";
     if response.status_code == 200:
         response.encoding = 'utf-8'
@@ -103,11 +102,11 @@ async def process_stream_reponse(response: requests.Response):
             if json_line["content"]:
                 sentence += json_line["content"]
                 text_response += sentence
-                sentence = await flush_sentence(sentence)
+                sentence = flush_sentence(sentence)
     add_answer_to_context(text_response)
 
                 
-async def flush_sentence(sentence: str):
+def flush_sentence(sentence: str):
     sentences_to_flush = re.split(stop_signs_regex, sentence)
     logger.info(f"phrase : {sentence}") 
     if len(sentences_to_flush) > 1:
