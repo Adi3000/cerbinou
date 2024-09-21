@@ -103,7 +103,7 @@ def process_stream_reponse(response: requests.Response):
                 sentence += json_line["content"]
                 text_response += sentence
                 sentence = flush_sentence(sentence)
-    add_answer_to_context(text_response)
+        add_answer_to_context(text_response)
 
                 
 def flush_sentence(sentence: str):
@@ -116,7 +116,8 @@ def flush_sentence(sentence: str):
 
     new_sentence = sentences_to_flush[-1]
     if any(symbol in new_sentence for symbol in stop_signs):
-        requests.post(f"{RHASSPY_URL}/api/text-to-speech", data=new_sentence.encode("utf-8"), headers=post_text_headers)
+        if new_sentence:
+            requests.post(f"{RHASSPY_URL}/api/text-to-speech", data=new_sentence.encode("utf-8"), headers=post_text_headers)
         return ""
     else:
         return new_sentence
