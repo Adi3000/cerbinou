@@ -5,7 +5,7 @@ class Speech(BaseModel):
     text: str
 
 class IntentResponse(BaseModel):
-    speech: Speech
+    speech: Optional[Speech]
     
 class IntentTypeRequest(BaseModel):
     name: Optional[str]

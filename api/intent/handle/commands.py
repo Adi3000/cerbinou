@@ -14,5 +14,5 @@ def get_misunderstood_speech():
     return Speech(text= "Je n'ai pas compris")
 
 def get_prompt_speech(prompt: str):
-    response= get_prompt_response(prompt)
-    return Speech(text= response)
+    get_prompt_response(prompt)
+    return None
