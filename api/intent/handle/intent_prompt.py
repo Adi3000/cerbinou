@@ -1,3 +1,4 @@
+import asyncio
 import requests
 import logging  
 import re
@@ -65,9 +66,9 @@ def get_prompt_response(prompt: str):
         logging.info("connection refuse to[%s] response from : %s",LLAMA_URL, LLAMA_FAILBACK_URL)
         
     logger.info("Response output %s", response.json())
-    text_response = process_stream_reponse(response)
-    add_answer_to_context(text_response)
+    asyncio.create_task(process_stream_reponse(response))
     telegram.send_message(text=prompt, quote=True)
+
 
 def add_prompt_to_context(prompt: str):
     global prompt_context
@@ -92,7 +93,7 @@ def purge_context(context: str):
             return context
 
 
-def process_stream_reponse(response: requests.Response):
+async def process_stream_reponse(response: requests.Response):
     text_response = "";
     if response.status_code == 200:
         response.encoding = 'utf-8'
@@ -102,18 +103,18 @@ def process_stream_reponse(response: requests.Response):
             if json_line["content"]:
                 sentence += json_line["content"]
                 text_response += sentence
-                sentence = flush_sentence(sentence)
-    return text_response
+                sentence = await flush_sentence(sentence)
+    add_answer_to_context(text_response)
 
                 
-def flush_sentence(sentence: str):
+async def flush_sentence(sentence: str):
     sentences_to_flush = re.split(stop_signs_regex, sentence)
     logger.info(f"phrase : {sentence}") 
     if len(sentences_to_flush) > 1:
         for i in range(len(sentences_to_flush) - 1):
             if sentences_to_flush[i]:
                 requests.post(f"{RHASSPY_URL}/api/text-to-speech", data=sentences_to_flush[i].encode("utf-8"), headers=post_text_headers)
-        
+
     new_sentence = sentences_to_flush[-1]
     if any(symbol in new_sentence for symbol in stop_signs):
         requests.post(f"{RHASSPY_URL}/api/text-to-speech", data=new_sentence.encode("utf-8"), headers=post_text_headers)
