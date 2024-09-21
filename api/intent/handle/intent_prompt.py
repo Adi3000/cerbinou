@@ -8,7 +8,7 @@ from audit import telegram
 LLAMA_URL = os.getenv("LLAMA_URL", "http://localhost:8080")
 LLAMA_FAILBACK_URL = os.getenv("LLAMA_FAILBACK_URL", "http://localhost:8080")
 LLAMA_MAX_WORDS= int(os.getenv("LLAMA_MAX_WORDS","1000"))
-RHASSPY_URL = os.getenv("RHASSPY_HOST", "http://localhost:12101")
+RHASSPY_URL = os.getenv("RHASSPY_HOST", "http://192.168.0.44:12101")
 
 logger = logging.getLogger(__name__)
 
@@ -64,7 +64,6 @@ def get_prompt_response(prompt: str):
         response = requests.post(url=f"{LLAMA_FAILBACK_URL}/completion", json= {"prompt": purge_context(prompt_context)})
         logging.info("connection refuse to[%s] response from : %s",LLAMA_URL, LLAMA_FAILBACK_URL)
         
-    logger.info("Response output %s", response.json())
     process_stream_reponse(response)
     telegram.send_message(text=prompt, quote=True)
 
@@ -103,12 +102,13 @@ def process_stream_reponse(response: requests.Response):
                 sentence += json_line["content"]
                 text_response += sentence
                 sentence = flush_sentence(sentence)
+        logger.info("Response output %s", text_response)
         add_answer_to_context(text_response)
 
                 
 def flush_sentence(sentence: str):
     sentences_to_flush = re.split(stop_signs_regex, sentence)
-    logger.info(f"phrase : {sentence}") 
+    logger.debug(f"phrase : {sentence}") 
     if len(sentences_to_flush) > 1:
         for i in range(len(sentences_to_flush) - 1):
             if sentences_to_flush[i]:
