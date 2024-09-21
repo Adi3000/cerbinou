@@ -58,14 +58,14 @@ def get_prompt_response(prompt: str):
     try:
         response= requests.post(f"{LLAMA_URL}/completion", json= {"prompt": purge_context(prompt_context)}, timeout=(2,30), stream=True)
     except requests.exceptions.Timeout:
-        response = requests.post(url=f"{LLAMA_FAILBACK_URL}/completion", json= {"prompt": purge_context(prompt_context)}, )
+        response = requests.post(url=f"{LLAMA_FAILBACK_URL}/completion", json= {"prompt": purge_context(prompt_context)})
         logging.info("timeout from [%s] response from : %s", f"{LLAMA_URL}", LLAMA_FAILBACK_URL)
     except requests.exceptions.ConnectionError:
         response = requests.post(url=f"{LLAMA_FAILBACK_URL}/completion", json= {"prompt": purge_context(prompt_context)})
         logging.info("connection refuse to[%s] response from : %s",LLAMA_URL, LLAMA_FAILBACK_URL)
         
-    process_stream_reponse(response)
     telegram.send_message(text=prompt, quote=True)
+    process_stream_reponse(response)
 
 
 def add_prompt_to_context(prompt: str):
