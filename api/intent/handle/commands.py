@@ -1,6 +1,6 @@
 from datetime import datetime
 from intent.models import Speech
-from intent.handle.intent_prompt import get_prompt_response
+from intent.handle.prompt.intent_prompt import get_prompt_response
 import logging
 
 logger = logging.getLogger(__name__)
