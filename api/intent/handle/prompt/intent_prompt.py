@@ -45,7 +45,7 @@ def get_prompt_response(prompt: str):
     except requests.exceptions.ConnectionError:
         response = requests.post(url=f"{LLAMA_FAILBACK_URL}/v1/chat/completions", json=request)
         logging.info("connection refuse to[%s] response from : %s",LLAMA_URL, LLAMA_FAILBACK_URL)
-        
+    telegram.send_message(text=prompt, quote=True)       
     process_response(response)
 
 
@@ -74,7 +74,6 @@ def add_answer_to_context(answer: str):
         "role": "assistant",
         "content": answer
     }]
-    telegram.send_message(text=answer, quote=True)
     
 def process_response(response: requests.Response):
     if response.status_code == 200:
