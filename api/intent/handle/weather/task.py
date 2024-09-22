@@ -15,14 +15,32 @@ def get_weather():
     response = requests.get("https://api.open-meteo.com/v1/forecast", params=params).json()
     daily = response["daily"]
     current = response["current"]
-    current_quote = f"La météo est actuellement {translate_weather_code(current["weather_code"])} avec une température de {current["temperature_2m"]}"
-    today_quote = f"Aujourd'hui la température sera entre {daily["apparent_temperature_min"][0]} et {daily["apparent_temperature_max"][0]} avec une météo {translate_weather_code(daily["weather_code"][0])}"
-    tomorrow_quote = f"Demain la température sera entre {daily["apparent_temperature_min"][1]} et {daily["apparent_temperature_max"][1]} avec une météo {translate_weather_code(daily["weather_code"][1])}"
+
+    current_weather = translate_weather_code(current["weather_code"])
+    current_temperature = current["temperature_2m"] 
+    current_quote = f"La météo est actuellement {current_weather} avec une température de {current_temperature}"
+
+    today_min_temp = daily["apparent_temperature_min"][0]
+    today_max_temp = daily["apparent_temperature_max"][0]
+    today_weather = translate_weather_code(daily["weather_code"][0])
+    today_quote = f"Aujourd'hui la température sera entre {today_min_temp} et {today_max_temp} avec une météo {today_weather}"
+
+    tomorrow_min_temp = daily["apparent_temperature_min"][1]
+    tomorrow_max_temp = daily["apparent_temperature_max"][1]
+    tomorrow_weather = translate_weather_code(daily["weather_code"][1])
+    tomorrow_quote = f"Demain la température sera entre {tomorrow_min_temp} et {tomorrow_max_temp} avec une météo {tomorrow_weather}"
+
     hourly = response["hourly"]
-    hourly_forcast = f"Dans les 10 prochaines heures les température seront entre {max(hourly["temperature_2m"])}°C et {min(hourly["temperature_2m"])}°C, et les quantités de précipitations seront au total de {sum(hourly["rain"])} mm"
+    hourly_min_temp = min(hourly["temperature_2m"])
+    hourly_max_temp = max(hourly["temperature_2m"])
+    hourly_rain = sum(hourly["rain"])
+    hourly_forcast = f"Dans les 10 prochaines heures les température seront entre {hourly_min_temp}°C et {hourly_max_temp}°C, et les quantités de précipitations seront au total de {hourly_rain} mm"
+
+
+
     return f"{current_quote}\n{today_quote}\n{tomorrow_quote}\n{hourly_forcast}"
-    
-    
+
+
 def translate_weather_code(weather_code: int):
     if weather_code == 0:
         return "au ciel bleu"
