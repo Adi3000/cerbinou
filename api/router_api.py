@@ -90,7 +90,7 @@ if __name__ == "__main__":
     except ConnectionRefusedError:
         logging.warning("Cannot connect to %s:%d", MQTT_HOST, MQTT_PORT)
     router.add_middleware(LogRequestsMiddleware)
-    uvicorn.run("router_api:router", workers=2, host="0.0.0.0", port=CERBINOU_PORT, reload=False, log_level="info")
+    uvicorn.run("router_api:router", workers=HTTP_WORKERS, host="0.0.0.0", port=CERBINOU_PORT, reload=False, log_level="info")
     
     
     handler.running = False
