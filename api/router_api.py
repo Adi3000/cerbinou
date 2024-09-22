@@ -20,6 +20,7 @@ CERBINOU_PORT = int(os.getenv("CERBINOU_PORT", "9977"))
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "12183"))
 DATE_LOCALE = os.getenv("DATE_LOCALE", "fr_FR.UTF-8")
+HTTP_WORKERS = int(os.getenv("HTTP_WORKERS", "2"))
 locale.setlocale(locale.LC_TIME, DATE_LOCALE)
 logging.basicConfig(
     level=logging.INFO,
@@ -89,7 +90,7 @@ if __name__ == "__main__":
     except ConnectionRefusedError:
         logging.warning("Cannot connect to %s:%d", MQTT_HOST, MQTT_PORT)
     router.add_middleware(LogRequestsMiddleware)
-    uvicorn.run("router_api:router", workers=4, host="0.0.0.0", port=CERBINOU_PORT, reload=False, log_level="info")
+    uvicorn.run("router_api:router", workers=2, host="0.0.0.0", port=CERBINOU_PORT, reload=False, log_level="info")
     
     
     handler.running = False
