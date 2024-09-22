@@ -1,3 +1,5 @@
+from transformers import AutoTokenizer
+from datetime import datetime
 import requests
 import logging  
 import re
@@ -8,6 +10,8 @@ from audit import telegram
 LLAMA_URL = os.getenv("LLAMA_URL", "http://localhost:8080")
 LLAMA_FAILBACK_URL = os.getenv("LLAMA_FAILBACK_URL", "http://localhost:8080")
 LLAMA_MAX_WORDS= int(os.getenv("LLAMA_MAX_WORDS","1000"))
+LLAMA_TOP_P= float(os.getenv("LLAMA_TOP_P","0.6"))
+LLAMA_TEMPERATURE= float(os.getenv("LLAMA_TEMPERATURE","0.9"))
 RHASSPY_URL = os.getenv("RHASSPY_HOST", "http://192.168.0.44:12101")
 
 logger = logging.getLogger(__name__)
@@ -25,70 +29,65 @@ stop_list = [
         "<|end_of_turn|>",
         "<|endoftext|>",
         "assistant",
-        "user"
+        "user",
+        "system"
     ]
 
 json_template = {
-    "stop": [
-        "</s>",
-        "<|end|>",
-        "<|eot_id|>",
-        "<|end_of_text|>",
-        "<|im_end|>",
-        "<|EOT|>",
-        "<|END_OF_TURN_TOKEN|>",
-        "<|end_of_turn|>",
-        "<|endoftext|>",
-        "cerbinou",
-        "user"
-    ],
     "repeat_penalty": 1.7,
     "penalize_nl": True,
-    "top_p": 0.6,
-    "temperature": 0.9,
+    "top_p": LLAMA_TOP_P,
+    "temperature": LLAMA_TEMPERATURE,
     "cache_prompt": True,
 }
 
 prompt_context =  "Bonjour, es-tu disponible ?<|eot_id|><|start_header_id|>cerbinou<|end_header_id|>\n\nOui bien sûr, que veux tu savoir ?<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n"
 post_text_headers = {'Content-Type': 'text/plain; charset=utf-8'}
-
+latest_chats = []
+system_prompt = "Tu es un chien-assistant femelle à trois tête s'appelant Cerbinou qui répond comme un enfant de manière brève, courte et concise aux questions posées. Évite les détails inutiles, les smileys et les didascalie. Le prompt est branché à un transcripteur textuelle : lorsque tu ne comprends pas une phrase, tu sais qu'elle a mal été transcrite donc que tu as mal entendu. Tu connais Kona, c'est une gentille voiture."
 def get_prompt_response(prompt: str):
-    global prompt_context
-    add_prompt_to_context(prompt)
+    tokenizer = AutoTokenizer.from_pretrained("unsloth/Meta-Llama-3.1-8B-Instruct-bnb-4bit")
+    user_prompt = build_user_prompt(prompt)
+    prompt_request = tokenizer.apply_chat_template(tokenize=False,max_length=LLAMA_MAX_WORDS, conversation=user_prompt,  add_generation_prompt=True)
     try:
-        response= requests.post(f"{LLAMA_URL}/completion", json= {"prompt": purge_context(prompt_context)}, timeout=(2,30), stream=True)
+        response= requests.post(f"{LLAMA_URL}/completion", json= {"prompt": prompt_request}, timeout=(2,30), stream=True)
     except requests.exceptions.Timeout:
-        response = requests.post(url=f"{LLAMA_FAILBACK_URL}/completion", json= {"prompt": purge_context(prompt_context)})
+        response = requests.post(url=f"{LLAMA_FAILBACK_URL}/completion", json= {"prompt": prompt_request}, stream=True)
         logging.info("timeout from [%s] response from : %s", f"{LLAMA_URL}", LLAMA_FAILBACK_URL)
     except requests.exceptions.ConnectionError:
-        response = requests.post(url=f"{LLAMA_FAILBACK_URL}/completion", json= {"prompt": purge_context(prompt_context)})
+        response = requests.post(url=f"{LLAMA_FAILBACK_URL}/completion", json= {"prompt": prompt_request}, stream=True)
         logging.info("connection refuse to[%s] response from : %s",LLAMA_URL, LLAMA_FAILBACK_URL)
         
-    telegram.send_message(text=prompt, quote=True)
     process_stream_reponse(response)
 
 
-def add_prompt_to_context(prompt: str):
+def build_user_prompt(prompt: str):
     global prompt_context
-    prompt_context += f"{prompt}<|eot_id|><|start_header_id|>cerbinou<|end_header_id|>\n\n"
-
-def add_answer_to_context(answer: str):
-    global prompt_context
-    prompt_context += f"{answer}<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n"
+    global system_prompt
+    current_state = f"{get_time_speech()}. {system_prompt}" 
+    chat = [
+        {
+            "role": "system",
+            "content": current_state   
+        }
+    ]
+    chat += latest_chats
     
-def check_nb_token(context: str):
-    sanitized_text = context.replace("<|eot_id|><|start_header_id|>cerbinou<|end_header_id|>", "").replace("<|eot_id|><|start_header_id|>user<|end_header_id|>", "")
-    return len(sanitized_text.split()) <= LLAMA_MAX_WORDS
-
-def purge_context(context: str):
-    if check_nb_token(context):
-        return context
-    else:
-        context_parts = context("<|eot_id|><|start_header_id|>user<|end_header_id|>\n\n", 1)
-        if(len(context_parts) > 1):
-            return purge_context(context_parts[1])
-        else:
-            return context
+    chat += [{
+        "role": "user",
+        "content": prompt
+    }]
+    while len(str(chat).split()) > LLAMA_MAX_WORDS and len(chat) > 1:
+        chat.remove(2)
+    return chat
+    
+def add_answer_to_context(answer: str):
+    global latest_chats
+    latest_chats += [{
+        "role": "assistant",
+        "content": answer
+    }]
+    telegram.send_message(text=answer, quote=True)
 
 
 def process_stream_reponse(response: requests.Response):
@@ -121,3 +120,8 @@ def flush_sentence(sentence: str):
         return ""
     else:
         return new_sentence
+
+
+def get_time_speech(): 
+    now = datetime.now()
+    return now.strftime("On est le %A %d %B %Y et il est %H heures %M et %S secondes")

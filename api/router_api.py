@@ -14,11 +14,13 @@ import logging
 import threading
 import sys
 import os
+import locale
 
 CERBINOU_PORT = int(os.getenv("CERBINOU_PORT", "9977"))
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "12183"))
-
+DATE_LOCALE = os.getenv("DATE_LOCALE", "fr_FR.UTF-8")
+locale.setlocale(locale.LC_TIME, DATE_LOCALE)
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'  # Define the log format
