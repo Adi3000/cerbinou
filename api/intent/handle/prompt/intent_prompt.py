@@ -18,6 +18,8 @@ model_config = os.path.join(current_dir, 'llama-3.1-8B')
 logger = logging.getLogger(__name__)
 
 stop_signs_regex = r'(?<=[.!?:])|(?<=\.\.\.)'
+is_sentence = r'.*[A-Za-z0-9].*'
+
 stop_signs = [".", "!", "?", ":"]
 
 json_template = {
@@ -101,12 +103,12 @@ def flush_sentence(sentence: str):
     logger.info(f"phrase : {sentences_to_flush}") 
     if len(sentences_to_flush) > 1:
         for i in range(len(sentences_to_flush) - 1):
-            if sentences_to_flush[i]:
+            if is_sentence.find(sentences_to_flush[i]) > 0:
                 requests.post(f"{RHASSPY_URL}/api/text-to-speech", data=sentences_to_flush[i].encode("utf-8"), headers=post_text_headers)
 
     new_sentence = sentences_to_flush[-1]
     if any(symbol in new_sentence for symbol in stop_signs):
-        if new_sentence:
+        if  is_sentence.find(new_sentence) > 0:
             requests.post(f"{RHASSPY_URL}/api/text-to-speech", data=new_sentence.encode("utf-8"), headers=post_text_headers)
         return ""
     else:
