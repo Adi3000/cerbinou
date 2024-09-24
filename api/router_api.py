@@ -63,7 +63,7 @@ async def execute_command(request: IntentRequest):
     if request.intent.name == "GetTime":
         return IntentResponse(speech=get_time_speech())
     elif request.intent.name == "Prompt":
-        await get_prompt_speech(request.text);
+        get_prompt_speech(request.text);
         return IntentResponse(speech=None)
     else:
         return IntentResponse(speech=get_misunderstood_speech())
