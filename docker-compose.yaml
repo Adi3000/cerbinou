@@ -31,10 +31,12 @@ services:
     container_name: whisper
     restart: unless-stopped
     environment:
-      - "ASR_MODEL=base"
-      - "ASR_ENGINE=openai_whisper"
+      - "ASR_MODEL=large-v3"
+      - "ASR_ENGINE=faster_whisper"
     ports:
       - "9000:9000/tcp"  
+    volumes:
+      - /mnt/g/Utils/whisper/cache:/root/.cache/whisper:rw
     runtime: nvidia
     deploy:
       resources:
