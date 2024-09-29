@@ -103,12 +103,12 @@ def flush_sentence(sentence: str):
     logger.info(f"phrase : {sentences_to_flush}") 
     if len(sentences_to_flush) > 1:
         for i in range(len(sentences_to_flush) - 1):
-            if is_sentence.find(sentences_to_flush[i]) > 0:
+            if re.search(is_sentence,sentences_to_flush[i]):
                 requests.post(f"{RHASSPY_URL}/api/text-to-speech", data=sentences_to_flush[i].encode("utf-8"), headers=post_text_headers)
 
     new_sentence = sentences_to_flush[-1]
     if any(symbol in new_sentence for symbol in stop_signs):
-        if  is_sentence.find(new_sentence) > 0:
+        if  re.search(is_sentence,new_sentence):
             requests.post(f"{RHASSPY_URL}/api/text-to-speech", data=new_sentence.encode("utf-8"), headers=post_text_headers)
         return ""
     else:
