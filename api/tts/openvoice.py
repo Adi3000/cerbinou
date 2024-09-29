@@ -1,4 +1,4 @@
-import requests
+import httpx
 import logging
 import os
 from audit import telegram
@@ -16,13 +16,13 @@ def speech(text: str):
         "voice":"cerbinou"
     }
     try:
-        response = requests.post(url=f"{OPENVOICE_API_URL}/v2/generate-audio", json=openvoice_param, timeout=(2,30))
+        response = httpx.post(url=f"{OPENVOICE_API_URL}/v2/generate-audio", json=openvoice_param, timeout=(2,30))
         logging.info("tts [%s] response", OPENVOICE_API_URL)
-    except requests.exceptions.Timeout:
-        response = requests.post(url=f"{OPENVOICE_API_FAILBACK_URL}/v2/generate-audio", json=openvoice_param)
+    except httpx.exceptions.Timeout:
+        response = httpx.post(url=f"{OPENVOICE_API_FAILBACK_URL}/v2/generate-audio", json=openvoice_param)
         logging.info("timeout from [%s] response from : %s", f"{OPENVOICE_API_URL}/v2/generate-audio", OPENVOICE_API_FAILBACK_URL)
-    except requests.exceptions.ConnectionError:
-        response = requests.post(url=f"{OPENVOICE_API_FAILBACK_URL}/v2/generate-audio", json=openvoice_param)
+    except httpx.exceptions.ConnectionError:
+        response = httpx.post(url=f"{OPENVOICE_API_FAILBACK_URL}/v2/generate-audio", json=openvoice_param)
         logging.info("connection refuse to[%s] response from : %s",OPENVOICE_API_URL, OPENVOICE_API_FAILBACK_URL)
     telegram.send_message(text=text, quote=False)
     return response.content

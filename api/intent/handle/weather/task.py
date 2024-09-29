@@ -1,4 +1,4 @@
-import requests
+import httpx
 
 params = {
 	"latitude": 50.6369495,
@@ -12,7 +12,7 @@ params = {
 }
 
 def get_weather():
-    response = requests.get("https://api.open-meteo.com/v1/forecast", params=params).json()
+    response = httpx.get("https://api.open-meteo.com/v1/forecast", params=params).json()
     daily = response["daily"]
     current = response["current"]
 

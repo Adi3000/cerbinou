@@ -1,4 +1,4 @@
-import requests
+import httpx
 import random
 import string
 import logging
@@ -24,14 +24,11 @@ def parse_audio(audio_data: bytes):
         "output" : "txt"
     }
     try:
-        response = requests.post(url=f"{WHISPER_URL}/asr", files=files_to_forward, data=whisper_query_param, timeout=(2,30))
+        response = httpx.post(url=f"{WHISPER_URL}/asr", files=files_to_forward, data=whisper_query_param, timeout=(2,30))
         logging.info("whisper [%s] response : %s", f"{WHISPER_URL}/asr", response.text)
-    except requests.exceptions.Timeout:
-        response = requests.post(url=f"{WHISPER_FAILBACK_URL}/asr", files=files_to_forward, data=whisper_query_param)
+    except httpx.TimeoutException:
+        response = httpx.post(url=f"{WHISPER_FAILBACK_URL}/asr", files=files_to_forward, data=whisper_query_param)
         logging.info("Timeout whisper fallback [%s] response : %s", f"{WHISPER_URL}/asr", response.text)
-    except requests.exceptions.ConnectionError:
-        response = requests.post(url=f"{WHISPER_FAILBACK_URL}/asr", files=files_to_forward, data=whisper_query_param)
-        logging.info("Refused connection whisper fallback [%s] response : %s", f"{WHISPER_URL}/asr", response.text)
 
     return response.text
 

@@ -1,8 +1,10 @@
-from typing import Dict, Optional
+from typing import Optional
 from fastapi import FastAPI, Request, Response
 from fastapi.responses import PlainTextResponse
+from contextlib import asynccontextmanager
 import uvicorn
 from intent.handle.commands import get_time_speech, get_misunderstood_speech, get_prompt_speech
+from intent.handle.prompt import intent_prompt
 from intent.classification.analyze import analyze_text
 from intent.models import IntentResponse, IntentRequest
 from intent.handle.nointent_consumer import nointent_connection
@@ -20,7 +22,7 @@ CERBINOU_PORT = int(os.getenv("CERBINOU_PORT", "9977"))
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
 MQTT_PORT = int(os.getenv("MQTT_PORT", "12183"))
 DATE_LOCALE = os.getenv("DATE_LOCALE", "fr_FR.UTF-8")
-HTTP_WORKERS = int(os.getenv("HTTP_WORKERS", "2"))
+HTTP_WORKERS = int(os.getenv("HTTP_WORKERS", "0"))
 locale.setlocale(locale.LC_TIME, DATE_LOCALE)
 logging.basicConfig(
     level=logging.INFO,
@@ -59,11 +61,12 @@ async def text_decode(request: Request):
 
 @router.post("/api/command")
 async def execute_command(request: IntentRequest):
+    router.add_event_handler
     logger.info("Intent command %s", request.json())
     if request.intent.name == "GetTime":
         return IntentResponse(speech=get_time_speech())
     elif request.intent.name == "Prompt":
-        get_prompt_speech(request.text);
+        get_prompt_speech(request.text)
         return {}
     else:
         return IntentResponse(speech=get_misunderstood_speech())
@@ -76,6 +79,11 @@ async def execute_command(request: Request):
     logger.info("Speech request <%s>", speech_text)
     wav_data = speech(speech_text)
     return Response(content=wav_data, media_type="audio/wav")
+
+@asynccontextmanager
+def cleanup():
+    yield
+    intent_prompt.wait_tts_task()
 
 if __name__ == "__main__":
     no_intent_mqtt: Optional[any] = None

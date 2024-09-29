@@ -1,5 +1,6 @@
 from datetime import datetime
-import requests
+import httpx
+import asyncio
 import logging  
 import re
 import json
@@ -13,8 +14,6 @@ LLAMA_MAX_WORDS= int(os.getenv("LLAMA_MAX_WORDS","1000"))
 LLAMA_TOP_P= float(os.getenv("LLAMA_TOP_P","0.6"))
 LLAMA_TEMPERATURE= float(os.getenv("LLAMA_TEMPERATURE","0.9"))
 RHASSPY_URL = os.getenv("RHASSPY_HOST", "http://192.168.0.44:12101")
-current_dir = os.path.dirname(__file__)
-model_config = os.path.join(current_dir, 'llama-3.1-8B')
 logger = logging.getLogger(__name__)
 
 stop_signs_regex = r'(?<=[.!?:])|(?<=\.\.\.)'
@@ -35,20 +34,23 @@ post_text_headers = {'Content-Type': 'text/plain; charset=utf-8'}
 latest_chats = []
 system_prompt = "Tu es un chien-assistant femelle à trois tête s'appelant Cerbinou qui répond comme un enfant de manière brève, courte et concise aux questions posées. Évite les détails inutiles, les smileys et les didascalie. Le prompt est branché à un transcripteur textuelle : lorsque tu ne comprends pas une phrase, tu sais qu'elle a mal été transcrite donc que tu as mal entendu. Tu connais Kona, c'est une gentille voiture."
 
+tts_tasks=[]
 def get_prompt_response(prompt: str):
     global tokenizer
+    global tts_tasks
     user_prompt = build_user_prompt(prompt)
     request = json_template | {"messages" : user_prompt}
     try:
-        response= requests.post(f"{LLAMA_URL}/v1/chat/completions", json=request, timeout=(2,30))
-    except requests.exceptions.Timeout:
-        response = requests.post(url=f"{LLAMA_FAILBACK_URL}/v1/chat/completions", json=request)
+        response= httpx.post(f"{LLAMA_URL}/v1/chat/completions", json=request, timeout=(2,30))
+    except httpx.TimeoutException:
+        response = httpx.post(url=f"{LLAMA_FAILBACK_URL}/v1/chat/completions", json=request)
         logging.info("timeout from [%s] response from : %s", f"{LLAMA_URL}", LLAMA_FAILBACK_URL)
-    except requests.exceptions.ConnectionError:
-        response = requests.post(url=f"{LLAMA_FAILBACK_URL}/v1/chat/completions", json=request)
-        logging.info("connection refuse to[%s] response from : %s",LLAMA_URL, LLAMA_FAILBACK_URL)
-    telegram.send_message(text=prompt, quote=True)       
-    process_response(response)
+    telegram.send_message(text=prompt, quote=True)
+    
+    process= process_response(response)
+    process_task = asyncio.create_task(process)
+    asyncio.shield(process_task)
+    tts_tasks += [process_task]
 
 
 def build_user_prompt(prompt: str):
@@ -77,14 +79,14 @@ def add_answer_to_context(answer: str):
         "content": answer
     }]
     
-def process_response(response: requests.Response):
+async def process_response(response: httpx.Response):
     if response.status_code == 200:
         message = response.json()["choices"][0]["message"]["content"]
         flush_sentence(message)
         add_answer_to_context(message)
     
 
-def process_stream_response(response: requests.Response):
+def process_stream_response(response: httpx.Response):
     text_response = ""
     if response.status_code == 200:
         sentence = ""
@@ -104,16 +106,21 @@ def flush_sentence(sentence: str):
     if len(sentences_to_flush) > 1:
         for i in range(len(sentences_to_flush) - 1):
             if re.search(is_sentence,sentences_to_flush[i]):
-                requests.post(f"{RHASSPY_URL}/api/text-to-speech", data=sentences_to_flush[i].encode("utf-8"), headers=post_text_headers)
+                httpx.post(f"{RHASSPY_URL}/api/text-to-speech", data=sentences_to_flush[i].encode("utf-8"), headers=post_text_headers)
 
     new_sentence = sentences_to_flush[-1]
     if any(symbol in new_sentence for symbol in stop_signs):
         if  re.search(is_sentence,new_sentence):
-            requests.post(f"{RHASSPY_URL}/api/text-to-speech", data=new_sentence.encode("utf-8"), headers=post_text_headers)
+            httpx.post(f"{RHASSPY_URL}/api/text-to-speech", data=new_sentence.encode("utf-8"), headers=post_text_headers)
         return ""
     else:
         return new_sentence
 
+async def wait_tts_task():
+    global tts_tasks
+    for task in tts_tasks:
+        await task
+    
 
 def get_time_speech(): 
     now = datetime.now()
