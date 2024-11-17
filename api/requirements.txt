@@ -3,4 +3,7 @@ uvicorn
 paho-mqtt
 httpx
 websockets
-asyncio
+requests
+pytest
+pytest-mock
+pytest-asyncio

@@ -31,12 +31,13 @@ services:
     container_name: whisper
     restart: unless-stopped
     environment:
-      - "ASR_MODEL=large-v3"
+      - "ASR_MODEL=brandenkmurray/faster-whisper-large-v3-french-distil-dec16"
       - "ASR_ENGINE=faster_whisper"
     ports:
       - "9000:9000/tcp"  
     volumes:
       - /mnt/g/Utils/whisper/cache:/root/.cache/whisper:rw
+      - /mnt/g/Utils/whisper/models:/root/models:rw
     runtime: nvidia
     deploy:
       resources:
