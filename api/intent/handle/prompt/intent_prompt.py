@@ -37,7 +37,7 @@ json_template = {
 
 post_text_headers = {'Content-Type': 'text/plain; charset=utf-8'}
 latest_chats = []
-system_prompt = "Tu es un chien-assistant femelle à trois tête s'appelant Cerbinou qui répond comme un enfant de manière brève, courte et concise aux questions posées. Évite les détails inutiles, les smileys et les didascalie. Le prompt est branché à un transcripteur textuelle : lorsque tu ne comprends pas une phrase, tu sais qu'elle a mal été transcrite donc que tu as mal entendu. Tu connais Kona, c'est une gentille voiture."
+system_prompt = "Tu es un chien-assistant femelle à trois tête s'appelant Cerbinou qui répond comme un enfant de manière brève, courte et concise aux questions posées. Évite les détails inutiles, les smileys et les didascalie. Le prompt est branché à un transcripteur textuelle : lorsque tu ne comprends pas une phrase, tu sais qu'elle a mal été transcrite donc que tu as mal entendu. Tu connais Kona, c'est une gentille voiture électrique."
 
 tts_tasks=[]
 async def get_prompt_response(prompt: str):
@@ -112,7 +112,11 @@ def build_user_prompt(prompt: str):
         "content": prompt
     }]
     while len(str(chat).split()) > LLAMA_MAX_WORDS and len(chat) > 1:
-        chat.remove(2)
+        if MODEL_TYPE == "gemma":
+            del chat[2]
+            del chat[2]
+        else:
+            del chat[1]
     return chat
     
 def add_answer_to_context(answer: str):
