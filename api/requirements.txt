@@ -3,7 +3,6 @@ uvicorn
 paho-mqtt
 httpx
 websockets
-requests
 pytest
 pytest-mock
 pytest-asyncio
