@@ -32,7 +32,24 @@ def test_flush_sentence_with_twice_sentence(mocker):
     assert kwargs1["data"] == b"Bonjour, c'est moi."
     _, kwargs2 = all_calls[1]
     assert kwargs2["data"] == b"Comment ca va ?"
+
+def test_flush_sentence_with_multiple_punctuation(mocker):
+    mock_tts_post = mocker.patch("httpx.post")
+    mock_tts_post.return_value = httpx.Response(200)
     
+    last_sentence = intent_prompt.flush_sentence("Je n'ai pas compris \"une petite souris... Elle a un chapeau rouge !!\" et je ne peux donc continuer l'histoire.")
+    
+    assert not last_sentence
+    all_calls = mock_tts_post.call_args_list
+    
+    _, kwargs1 = all_calls[0]
+    assert kwargs1["data"] == b"Je n'ai pas compris \"une petite souris..."
+    _, kwargs2 = all_calls[1]
+    assert kwargs2["data"] == b"Elle a un chapeau rouge !"
+    _, kwargs2 = all_calls[2]
+    assert kwargs2["data"] == b"\" et je ne peux donc continuer l'histoire."
+    
+   
 def test_flush_sentence_with_twice_sentence_with_horizontal_ellipsis(mocker):
     mock_tts_post = mocker.patch("httpx.post")
     mock_tts_post.return_value = httpx.Response(200)

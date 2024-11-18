@@ -17,13 +17,13 @@ MODEL_TYPE= os.getenv("MODEL_TYPE", "gemma")
 RHASSPY_URL = os.getenv("RHASSPY_HOST", "http://192.168.0.44:12101")
 logger = logging.getLogger(__name__)
 
-stop_signs_regex = r'(?<=[.!?:\u2026])|(?<=\.\.\.)'
+stop_signs_regex = r'([.!?:\u2026\n]{1,3})'
 is_sentence = r'.*[A-Za-z0-9].*'
 
 stream_cleaner = r'^data:\s*(\{.*\})\n*'
 
 
-stop_signs = [".", "!", "?", ":"]
+stop_signs = [".", "!", "?", ":", "\n"]
 
 json_template = {
     "model" : MODEL_TYPE,
@@ -40,7 +40,7 @@ latest_chats = []
 system_prompt = "Tu es un chien-assistant femelle à trois tête s'appelant Cerbinou qui répond comme un enfant de manière brève, courte et concise aux questions posées. Évite les détails inutiles, les smileys et les didascalie. Le prompt est branché à un transcripteur textuelle : lorsque tu ne comprends pas une phrase, tu sais qu'elle a mal été transcrite donc que tu as mal entendu. Tu connais Kona, c'est une gentille voiture électrique."
 
 tts_tasks=[]
-async def get_prompt_response(prompt: str):
+def get_prompt_response(prompt: str):
     global tokenizer
     global tts_tasks
     user_prompt = build_user_prompt(prompt)
@@ -51,13 +51,13 @@ async def get_prompt_response(prompt: str):
     telegram.send_message(text=prompt, quote=True)
     try:
         if json_template["stream"]:
-            await process_stream_response(LLAMA_URL, request)
+            asyncio.run(process_stream_response(LLAMA_URL, request))
         else:
             response= httpx.post(f"{LLAMA_URL}/v1/chat/completions", json=request, timeout=(2,300))
     except httpx.TimeoutException:
         logging.info("timeout from [%s] response from : %s", f"{LLAMA_URL}", LLAMA_FAILBACK_URL)
         if json_template["stream"]:
-            await process_stream_response(LLAMA_FAILBACK_URL, request)
+            asyncio.run(process_stream_response(LLAMA_FAILBACK_URL, request))
         else:
             response = httpx.post(url=f"{LLAMA_FAILBACK_URL}/v1/chat/completions", json=request)
     
@@ -83,6 +83,9 @@ async def process_stream_response(url, request):
                         text_response += json_chunk["choices"][0]["delta"]["content"]
                         sentence = flush_sentence(sentence)
                         print(f"text_response: {text_response}\n")
+            if sentence.strip():
+                flush_sentence(sentence)
+            text_response = re.sub(r"\n+","\n", text_response)
             logger.info("Response output %s", text_response)
             add_answer_to_context(text_response)
 
@@ -139,6 +142,10 @@ def flush_sentence(sentence: str):
     if len(sentences_to_flush) > 1:
         for i in range(len(sentences_to_flush) - 1):
             stripped_sentence = sentences_to_flush[i].strip()
+            if i+1 < len(sentences_to_flush) and re.match(stop_signs_regex,sentences_to_flush[i+1].strip()):
+                stripped_sentence = sentences_to_flush[i] + sentences_to_flush[i+1]
+                stripped_sentence = stripped_sentence.strip()
+                i = i + 1
             if re.search(is_sentence, stripped_sentence):
                 httpx.post(f"{RHASSPY_URL}/api/text-to-speech", data=stripped_sentence.encode("utf-8"), headers=post_text_headers)
 

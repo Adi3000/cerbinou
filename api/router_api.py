@@ -60,7 +60,7 @@ async def text_decode(request: Request):
     return analyze_text(intent_text)
 
 @router.post("/api/command")
-async def execute_command(request: IntentRequest):
+def execute_command(request: IntentRequest):
     router.add_event_handler
     logger.info("Intent command %s", request.json())
     if request.intent.name == "GetTime":
