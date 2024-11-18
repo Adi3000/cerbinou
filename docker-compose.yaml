@@ -27,12 +27,12 @@ services:
       - /mnt/e/workspace/my-scripts/cerbinou/tts/speakers:/app/speakers:rw
       - /mnt/e/workspace/my-scripts/cerbinou/tts/processed:/app/processed:rw
   whisper:
-    image: onerahmet/openai-whisper-asr-webservice:latest-gpu
+    image: onerahmet/openai-whisper-asr-webservice:v1.6.0-gpu
     container_name: whisper
     restart: unless-stopped
     environment:
-      - "ASR_MODEL=brandenkmurray/faster-whisper-large-v3-french-distil-dec16"
-      - "ASR_ENGINE=faster_whisper"
+      - "ASR_MODEL=turbo"
+      - "ASR_ENGINE=openai_whisper" #openai_whisper,faster_whisper
     ports:
       - "9000:9000/tcp"  
     volumes:
