@@ -82,7 +82,6 @@ async def process_stream_response(url, request):
                         sentence += json_chunk["choices"][0]["delta"]["content"]
                         text_response += json_chunk["choices"][0]["delta"]["content"]
                         sentence = flush_sentence(sentence)
-                        print(f"text_response: {text_response}\n")
             if sentence.strip():
                 flush_sentence(sentence)
             text_response = re.sub(r"\n+","\n", text_response)
@@ -105,7 +104,7 @@ def build_user_prompt(prompt: str):
                 "content": current_state
             }, {
                 "role": "assistant",
-                "content": "Qu'est ce que je peux faire pour la famille aujourd'hui ?"
+                "content": "Salut, moi c'est Cerbinou ! Je suis content d'être là prêt à raconter des histoire ou aider la famille."
             },
         ]
     chat += latest_chats
@@ -138,7 +137,6 @@ async def process_response(response: httpx.Response):
 
 def flush_sentence(sentence: str):
     sentences_to_flush = re.split(stop_signs_regex, sentence)
-    logger.info(f"phrase : {sentences_to_flush}") 
     if len(sentences_to_flush) > 1:
         for i in range(len(sentences_to_flush) - 1):
             stripped_sentence = sentences_to_flush[i].strip()
@@ -147,11 +145,13 @@ def flush_sentence(sentence: str):
                 stripped_sentence = stripped_sentence.strip()
                 i = i + 1
             if re.search(is_sentence, stripped_sentence):
+                logger.info(f"phrase to flush (part) : {stripped_sentence}") 
                 httpx.post(f"{RHASSPY_URL}/api/text-to-speech", data=stripped_sentence.encode("utf-8"), headers=post_text_headers)
 
     new_sentence = sentences_to_flush[-1].strip()
     if any(symbol in new_sentence for symbol in stop_signs):
         if  re.search(is_sentence,new_sentence):
+            logger.info(f"phrase to flush (last) : {stripped_sentence}") 
             httpx.post(f"{RHASSPY_URL}/api/text-to-speech", data=new_sentence.encode("utf-8"), headers=post_text_headers)
         return ""
     else:
