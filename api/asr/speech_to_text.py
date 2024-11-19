@@ -27,7 +27,7 @@ def parse_audio(audio_data: bytes):
         response = httpx.post(url=f"{WHISPER_URL}/asr", files=files_to_forward, data=whisper_query_param, timeout=(2,60))
         logging.info("whisper [%s] response : %s", f"{WHISPER_URL}/asr", response.text)
     except (httpx.TimeoutException, httpx.ReadError) as err:
-        response = httpx.post(url=f"{WHISPER_FAILBACK_URL}/asr", files=files_to_forward, data=whisper_query_param)
+        response = httpx.post(url=f"{WHISPER_FAILBACK_URL}/asr", files=files_to_forward, data=whisper_query_param, timeout=(2,60))
         logging.info("Timeout whisper fallback [%s] response : %s\n%s", f"{WHISPER_URL}/asr", response.text, err)
 
     return response.text.strip()

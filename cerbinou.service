@@ -7,7 +7,7 @@ WorkingDirectory=/home/pi/git/cerbinou/api
 EnvironmentFile=/etc/cerbinou/router_api.env
 Restart=always
 User=pi
-SyslogIdentifier=ssh-domoticz
+SyslogIdentifier=cerbinou
 
 [Install]
 WantedBy=multi-user.target

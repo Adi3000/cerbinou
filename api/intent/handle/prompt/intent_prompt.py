@@ -59,7 +59,7 @@ def get_prompt_response(prompt: str):
         if json_template["stream"]:
             asyncio.run(process_stream_response(LLAMA_FAILBACK_URL, request))
         else:
-            response = httpx.post(url=f"{LLAMA_FAILBACK_URL}/v1/chat/completions", json=request)
+            response = httpx.post(url=f"{LLAMA_FAILBACK_URL}/v1/chat/completions", json=request, timeout=(2,300))
     
     if not json_template["stream"]:
         process= process_response(response)
