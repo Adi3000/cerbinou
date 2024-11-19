@@ -1,4 +1,5 @@
 import httpx
+import httpcore
 import logging
 import os
 from audit import telegram
@@ -19,7 +20,7 @@ def speech(text: str):
         response = httpx.post(url=f"{OPENVOICE_API_URL}/v2/generate-audio", json=openvoice_param, timeout=(2,30))
         logging.info("tts [%s] response", OPENVOICE_API_URL)
     except (httpx.TimeoutException, httpx.ReadError) as err:
-        response = httpx.post(url=f"{OPENVOICE_API_FAILBACK_URL}/v2/generate-audio", json=openvoice_param)
+        response = httpx.post(url=f"{OPENVOICE_API_FAILBACK_URL}/v2/generate-audio", json=openvoice_param, timeout=(2,120))
         logging.info("timeout from [%s] response from : %s\n%s", f"{OPENVOICE_API_URL}/v2/generate-audio", OPENVOICE_API_FAILBACK_URL, err)
     telegram.send_message(text=text, quote=False)
     return response.content
