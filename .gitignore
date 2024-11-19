@@ -1,3 +1,5 @@
 **/.idea
 **/__pycache__
 cerbinou/tts
+**/.env
+**/.vscode

@@ -18,12 +18,9 @@ def speech(text: str):
     try:
         response = httpx.post(url=f"{OPENVOICE_API_URL}/v2/generate-audio", json=openvoice_param, timeout=(2,30))
         logging.info("tts [%s] response", OPENVOICE_API_URL)
-    except httpx.exceptions.Timeout:
+    except (httpx.TimeoutException, httpx.ReadError) as err:
         response = httpx.post(url=f"{OPENVOICE_API_FAILBACK_URL}/v2/generate-audio", json=openvoice_param)
-        logging.info("timeout from [%s] response from : %s", f"{OPENVOICE_API_URL}/v2/generate-audio", OPENVOICE_API_FAILBACK_URL)
-    except httpx.exceptions.ConnectionError:
-        response = httpx.post(url=f"{OPENVOICE_API_FAILBACK_URL}/v2/generate-audio", json=openvoice_param)
-        logging.info("connection refuse to[%s] response from : %s",OPENVOICE_API_URL, OPENVOICE_API_FAILBACK_URL)
+        logging.info("timeout from [%s] response from : %s\n%s", f"{OPENVOICE_API_URL}/v2/generate-audio", OPENVOICE_API_FAILBACK_URL, err)
     telegram.send_message(text=text, quote=False)
     return response.content
 

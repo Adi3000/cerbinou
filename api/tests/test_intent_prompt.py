@@ -1,11 +1,13 @@
 import pytest
 import httpx
+import os
 from intent.handle.prompt import intent_prompt
 
 
 
 def test_config():
-    assert intent_prompt.json_template["model"] == "gemma"
+    model_type = os.getenv("MODEL_TYPE", "gemma")
+    assert intent_prompt.json_template["model"] == model_type
     
 
 def test_flush_sentence_with_one_sentence(mocker):
@@ -86,7 +88,7 @@ async def test_process_stream_response(mocker):
     request = intent_prompt.json_template | {"messages" : user_prompt}
     mock_tts_post = mocker.patch("httpx.post")
 
-    await intent_prompt.process_stream_response(request)
+    await intent_prompt.process_stream_response(intent_prompt.LLAMA_URL, request)
     
     all_calls = mock_tts_post.call_args_list
     for i in range(len(all_calls)):

@@ -54,8 +54,8 @@ def get_prompt_response(prompt: str):
             asyncio.run(process_stream_response(LLAMA_URL, request))
         else:
             response= httpx.post(f"{LLAMA_URL}/v1/chat/completions", json=request, timeout=(2,300))
-    except httpx.TimeoutException:
-        logging.info("timeout from [%s] response from : %s", f"{LLAMA_URL}", LLAMA_FAILBACK_URL)
+    except (httpx.TimeoutException, httpx.ReadError) as err:
+        logging.info("timeout from [%s] response from : %s\n%s", f"{LLAMA_URL}", LLAMA_FAILBACK_URL, err)
         if json_template["stream"]:
             asyncio.run(process_stream_response(LLAMA_FAILBACK_URL, request))
         else:
