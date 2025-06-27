@@ -30,7 +30,7 @@ Jinja2<3.1.0
 
 To avoid running pidog with sudo to play sound just copy 
 ```
-/etc/asound.conf
+cp /etc/asound.conf /home/pi/.asound
 ```
 into the `pi` user
 Then `sudo killall pulseaudio`
