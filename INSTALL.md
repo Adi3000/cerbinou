@@ -13,6 +13,7 @@ docker run -p 9000:9000 -e ASR_MODEL=base -e ASR_ENGINE=openai_whisper onerahmet
 ```
 git clone git@github.com:Adi3000/rhasspy.git
 git submodule update --recursive --remote
+conda install numpy==1.20.1 scipy==1.6.0 scikit-learn==0.23.2
 ./configure  RHASSPY_LANGUAGE=fr --disable-speech-to-text enable_precise=no enable_snowboy=no enable_nanotts=no enable_wavenet=no enable_larynx=no enable_pocketsphinx=no enable_raven=no enable_vosk=no --enable-in-place enable_virtualenv=no
 make
 make install
