@@ -24,3 +24,15 @@ Override requirements from rhasspy within rhasspy and rhasspy-tts-cli-hermes
 ```
 Jinja2<3.1.0
 ```
+
+
+## PiDog
+
+To avoid running pidog with sudo to play sound just copy 
+```
+/etc/asound.conf
+```
+into the `pi` user
+Then `sudo killall pulseaudio`
+then try again a `python3 pidog/examples/1_wake_up.py`
+
