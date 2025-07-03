@@ -17,6 +17,7 @@ import threading
 import sys
 import os
 import locale
+import asyncio
 
 CERBINOU_PORT = int(os.getenv("CERBINOU_PORT", "9977"))
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")

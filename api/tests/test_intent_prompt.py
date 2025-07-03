@@ -14,12 +14,12 @@ def test_flush_sentence_with_one_sentence(mocker):
     mock_tts_post = mocker.patch("httpx.post")
     mock_tts_post.return_value = httpx.Response(200)
     
-    last_sentence = intent_prompt.flush_sentence("Bonjour, c'est moi.")
+    last_sentence = intent_prompt.flush_sentence("Bonjour, c'est moi Pytest.")
     assert not last_sentence
     
     mock_tts_post.assert_called_once()
     _, kwargs = mock_tts_post.call_args
-    assert kwargs["data"] == b"Bonjour, c'est moi."
+    assert kwargs["data"] == b"Bonjour, c'est moi Pytest."
 
 def test_flush_sentence_with_twice_sentence(mocker):
     mock_tts_post = mocker.patch("httpx.post")
@@ -45,9 +45,9 @@ def test_flush_sentence_with_multiple_punctuation(mocker):
     all_calls = mock_tts_post.call_args_list
     
     _, kwargs1 = all_calls[0]
-    assert kwargs1["data"] == b"Je n'ai pas compris \"une petite souris..."
+    assert kwargs1["data"] == b"Je n'ai pas compris \"une petite souris\xe2\x80\xa6"
     _, kwargs2 = all_calls[1]
-    assert kwargs2["data"] == b"Elle a un chapeau rouge !"
+    assert kwargs2["data"] == b"Elle a un chapeau rouge !!"
     _, kwargs2 = all_calls[2]
     assert kwargs2["data"] == b"\" et je ne peux donc continuer l'histoire."
     

@@ -11,14 +11,15 @@ from intent.handle.weather import task
 LLAMA_URL = os.getenv("LLAMA_URL", "http://localhost:8080")
 LLAMA_FAILBACK_URL = os.getenv("LLAMA_FAILBACK_URL", "http://localhost:8080")
 LLAMA_MAX_WORDS= int(os.getenv("LLAMA_MAX_WORDS","1500"))
-LLAMA_TOP_P= float(os.getenv("LLAMA_TOP_P","0.6"))
-LLAMA_TEMPERATURE= float(os.getenv("LLAMA_TEMPERATURE","0.9"))
+LLAMA_TOP_P= float(os.getenv("LLAMA_TOP_P","0.5"))
+LLAMA_TEMPERATURE= float(os.getenv("LLAMA_TEMPERATURE","0.7"))
+SENTENCE_MIN_FLUSH= int(os.getenv("SENTENCE_MIN_FLUSH","10"))
 MODEL_TYPE= os.getenv("MODEL_TYPE", "gemma")
 RHASSPY_URL = os.getenv("RHASSPY_HOST", "http://192.168.0.44:12101")
 logger = logging.getLogger(__name__)
 
 stop_signs_regex = r'([.!?:\u2026\n]{1,3})'
-is_sentence = r'.*[A-Za-z0-9].*'
+is_sentence = r'.*[A-Za-z0-9]+.*'
 
 stream_cleaner = r'^data:\s*(\{.*\})\n*'
 
@@ -37,7 +38,7 @@ json_template = {
 
 post_text_headers = {'Content-Type': 'text/plain; charset=utf-8'}
 latest_chats = []
-system_prompt = "Tu es un chien-assistant femelle à trois tête s'appelant Cerbinou qui répond comme un enfant de manière brève, courte et concise aux questions posées. Évite les détails inutiles, les smileys et les didascalie. Le prompt est branché à un transcripteur textuelle : lorsque tu ne comprends pas une phrase, tu sais qu'elle a mal été transcrite donc que tu as mal entendu. Tu connais Kona, c'est une gentille voiture électrique."
+system_prompt = "Tu es un chien-robot-assistant plein d'imagination s'appelant Cerbinou qui repond comme un enfant. Evite les smileys et les didascalie. Tu attend dans un ordinateur et sera bientôt transféré dans un robot avec tes pattes et ta tete."
 
 tts_tasks=[]
 def get_prompt_response(prompt: str):
@@ -53,14 +54,12 @@ def get_prompt_response(prompt: str):
         if json_template["stream"]:
             asyncio.run(process_stream_response(LLAMA_URL, request))
         else:
-            response= httpx.post(f"{LLAMA_URL}/v1/chat/completions", json=request, timeout=(2,300))
+            response= httpx.post(f"{LLAMA_URL}/v1/chat/completions", json=request)
+            response.raise_for_status()
     except (httpx.TimeoutException, httpx.ReadError) as err:
-        logging.info("timeout from [%s] response from : %s\n%s", f"{LLAMA_URL}", LLAMA_FAILBACK_URL, err)
-        if json_template["stream"]:
-            asyncio.run(process_stream_response(LLAMA_FAILBACK_URL, request))
-        else:
-            response = httpx.post(url=f"{LLAMA_FAILBACK_URL}/v1/chat/completions", json=request, timeout=(2,300))
-    
+        logging.info("timeout from [%s] response from while Stream = %s: %s\n%s", f"{LLAMA_URL}", json_template["stream"], LLAMA_URL, err)
+        raise  RuntimeError(f"Chat completion failed for prompt <{prompt}>") from err
+
     if not json_template["stream"]:
         process= process_response(response)
         process_task = asyncio.create_task(process)
@@ -69,8 +68,9 @@ def get_prompt_response(prompt: str):
 
 
 async def process_stream_response(url, request):
-    async with httpx.AsyncClient() as client:
-        async with client.stream("POST", f"{url}/v1/chat/completions", json=request, timeout=(2,300)) as response:
+    timeout = httpx.Timeout(connect=5.0, read=60.0, write=10.0, pool=5.0)
+    async with httpx.AsyncClient(timeout=timeout) as client:
+        async with client.stream("POST", f"{url}/v1/chat/completions", json=request) as response:
             text_response = ""
             sentence = ""
             async for chunk in response.aiter_bytes():
@@ -82,6 +82,9 @@ async def process_stream_response(url, request):
                         sentence += json_chunk["choices"][0]["delta"]["content"]
                         text_response += json_chunk["choices"][0]["delta"]["content"]
                         sentence = flush_sentence(sentence)
+                    elif "choices" not in json_chunk or json_chunk["choices"][0]["finish_reason"] == "stop":
+                        logging.info("End of streaming (remaining sentence: <%s>)", sentence)
+                        break
             if sentence.strip():
                 flush_sentence(sentence)
             text_response = re.sub(r"\n+","\n", text_response)
@@ -113,6 +116,8 @@ def build_user_prompt(prompt: str):
         "role": "user",
         "content": prompt
     }]
+    chat_lenght =  len(str(chat).split()) 
+    logging.info(f" Chat size is %d / %d words", chat_lenght, LLAMA_MAX_WORDS)
     while len(str(chat).split()) > LLAMA_MAX_WORDS and len(chat) > 1:
         if MODEL_TYPE == "gemma":
             del chat[2]
@@ -133,20 +138,36 @@ async def process_response(response: httpx.Response):
         message = response.json()["choices"][0]["message"]["content"]
         flush_sentence(message)
         add_answer_to_context(message)
-    
+
+def sanitize(sentence: str):
+    sanitized = sentence.replace("...", "\u2026")
+    return sanitized
 
 def flush_sentence(sentence: str):
-    sentences_to_flush = re.split(stop_signs_regex, sentence)
+    if len(sentence) > SENTENCE_MIN_FLUSH:
+        return force_flush_sentence(sentence)
+    else:
+        return sentence
+
+def force_flush_sentence(sentence: str):
+    sentences_to_flush = re.split(stop_signs_regex, sanitize(sentence))
     if len(sentences_to_flush) > 1:
-        for i in range(len(sentences_to_flush) - 1):
+        i = 0
+        while i < len(sentences_to_flush) - 1:
             stripped_sentence = sentences_to_flush[i].strip()
             if i+1 < len(sentences_to_flush) and re.match(stop_signs_regex,sentences_to_flush[i+1].strip()):
                 stripped_sentence = sentences_to_flush[i] + sentences_to_flush[i+1]
                 stripped_sentence = stripped_sentence.strip()
                 i = i + 1
+                print(f"Sentence <{stripped_sentence}>")
             if re.search(is_sentence, stripped_sentence):
                 logger.info(f"phrase to flush (part) : {stripped_sentence}") 
-                httpx.post(f"{RHASSPY_URL}/api/text-to-speech", data=stripped_sentence.encode("utf-8"), headers=post_text_headers)
+                try:                
+                    httpx.post(f"{RHASSPY_URL}/api/text-to-speech", data=stripped_sentence.encode("utf-8"), headers=post_text_headers)
+                except Exception as e:
+                    logging.info(f"Did not had time to finish sending [{stripped_sentence}] due to <{e}>")
+            i = i + 1
+
 
     new_sentence = sentences_to_flush[-1].strip()
     if any(symbol in new_sentence for symbol in stop_signs):

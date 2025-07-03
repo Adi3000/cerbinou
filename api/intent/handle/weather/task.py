@@ -1,4 +1,5 @@
 import httpx
+from cachetools import cached, TTLCache
 
 params = {
 	"latitude": 50.6369495,
@@ -11,6 +12,9 @@ params = {
     "forecast_days": 2
 }
 
+weather = TTLCache(maxsize=1, ttl=3600)
+
+@cached(weather)
 def get_weather():
     response = httpx.get("https://api.open-meteo.com/v1/forecast", params=params).json()
     daily = response["daily"]
@@ -18,23 +22,23 @@ def get_weather():
 
     current_weather = translate_weather_code(current["weather_code"])
     current_temperature = current["temperature_2m"] 
-    current_quote = f"La météo est actuellement {current_weather} avec une température de {current_temperature}"
+    current_quote = f"La météo est actuellement {current_weather} avec une température de {current_temperature} degrés celsuis"
 
     today_min_temp = daily["apparent_temperature_min"][0]
     today_max_temp = daily["apparent_temperature_max"][0]
     today_weather = translate_weather_code(daily["weather_code"][0])
-    today_quote = f"Aujourd'hui la température sera entre {today_min_temp} et {today_max_temp} avec une météo {today_weather}"
+    today_quote = f"Aujourd'hui la température sera entre {today_min_temp} et {today_max_temp} degrés celsuis avec une météo {today_weather}"
 
     tomorrow_min_temp = daily["apparent_temperature_min"][1]
     tomorrow_max_temp = daily["apparent_temperature_max"][1]
     tomorrow_weather = translate_weather_code(daily["weather_code"][1])
-    tomorrow_quote = f"Demain la température sera entre {tomorrow_min_temp} et {tomorrow_max_temp} avec une météo {tomorrow_weather}"
+    tomorrow_quote = f"Demain la température sera entre {tomorrow_min_temp} et {tomorrow_max_temp} degrés celsuis avec une météo {tomorrow_weather}"
 
     hourly = response["hourly"]
     hourly_min_temp = min(hourly["temperature_2m"])
     hourly_max_temp = max(hourly["temperature_2m"])
     hourly_rain = sum(hourly["rain"])
-    hourly_forcast = f"Dans les 10 prochaines heures les température seront entre {hourly_min_temp}°C et {hourly_max_temp}°C, et les quantités de précipitations seront au total de {hourly_rain} mm"
+    hourly_forcast = f"Dans les 10 prochaines heures les température seront entre {hourly_min_temp} et {hourly_max_temp} degrés celsuis, et les quantités de précipitations seront au total de {hourly_rain} mm"
 
 
 

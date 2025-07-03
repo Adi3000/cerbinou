@@ -2,7 +2,7 @@
 Description=Rhasspy service
 
 [Service]
-ExecStart=/usr/bin/rhasspy -p fr
+ExecStart=/bin/bash /home/pi/rhasspy/bin/rhasspy -p fr
 Restart=always
 User=pi
 

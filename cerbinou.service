@@ -2,7 +2,7 @@
 Description=Cerbinou rhasspy router service
 
 [Service]
-ExecStart=/home/pi/miniconda3/condabin/conda run --live-stream -n cerbinou python /home/pi/git/cerbinou/api/router_api.py
+ExecStart=/home/pi/git/cerbinou/.venv/bin/python3 /home/pi/git/cerbinou/api/router_api.py 
 WorkingDirectory=/home/pi/git/cerbinou/api
 EnvironmentFile=/etc/cerbinou/router_api.env
 Restart=always
