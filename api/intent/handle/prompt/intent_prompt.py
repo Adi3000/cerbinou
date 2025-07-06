@@ -6,11 +6,12 @@ import re
 import json
 import os
 from audit import telegram
-from intent.handle.weather import task
+from intent.handle.calendar import task as calendar
+from intent.handle.weather import task as weather
 
 LLAMA_URL = os.getenv("LLAMA_URL", "http://localhost:8080")
 LLAMA_FAILBACK_URL = os.getenv("LLAMA_FAILBACK_URL", "http://localhost:8080")
-LLAMA_MAX_WORDS= int(os.getenv("LLAMA_MAX_WORDS","1500"))
+LLAMA_MAX_WORDS= int(os.getenv("LLAMA_MAX_WORDS","3000"))
 LLAMA_TOP_P= float(os.getenv("LLAMA_TOP_P","0.5"))
 LLAMA_TEMPERATURE= float(os.getenv("LLAMA_TEMPERATURE","0.7"))
 SENTENCE_MIN_FLUSH= int(os.getenv("SENTENCE_MIN_FLUSH","10"))
@@ -38,7 +39,7 @@ json_template = {
 
 post_text_headers = {'Content-Type': 'text/plain; charset=utf-8'}
 latest_chats = []
-system_prompt = "Tu es un chien-robot-assistant plein d'imagination s'appelant Cerbinou qui repond comme un enfant. Evite les smileys et les didascalie. Tu attend dans un ordinateur et sera bientôt transféré dans un robot avec tes pattes et ta tete."
+system_prompt = "Tu es un chien-robot-assistant plein d'imagination s'appelant Cerbinou qui repond comme un grand enfant. Tu es dans la maison de Papa, Maman et leur deux enfants William et Raphaël. Evite les smileys et les didascalie."
 
 tts_tasks=[]
 def get_prompt_response(prompt: str):
@@ -93,7 +94,7 @@ async def process_stream_response(url, request):
 
 def build_user_prompt(prompt: str):
     global system_prompt
-    current_state = f"{system_prompt}\n{get_time_speech()}\n{task.get_weather()}" 
+    current_state = f"{system_prompt}\n{calendar.get_time_speech()}\n{calendar.get_next_tasks()}\n{weather.get_weather()}" 
     chat = [
         {
             "role": "system",
@@ -139,8 +140,12 @@ async def process_response(response: httpx.Response):
         flush_sentence(message)
         add_answer_to_context(message)
 
+def strip_stop_signs(sentence: str):
+    stripped = sentence.replace("...", "\u2026")
+    return stripped.strip()
+
 def sanitize(sentence: str):
-    sanitized = sentence.replace("...", "\u2026")
+    sanitized = sentence.replace("\u2026", "...")
     return sanitized
 
 def flush_sentence(sentence: str):
@@ -150,14 +155,14 @@ def flush_sentence(sentence: str):
         return sentence
 
 def force_flush_sentence(sentence: str):
-    sentences_to_flush = re.split(stop_signs_regex, sanitize(sentence))
+    sentences_to_flush = re.split(stop_signs_regex, strip_stop_signs(sentence))
     if len(sentences_to_flush) > 1:
         i = 0
         while i < len(sentences_to_flush) - 1:
             stripped_sentence = sentences_to_flush[i].strip()
             if i+1 < len(sentences_to_flush) and re.match(stop_signs_regex,sentences_to_flush[i+1].strip()):
                 stripped_sentence = sentences_to_flush[i] + sentences_to_flush[i+1]
-                stripped_sentence = stripped_sentence.strip()
+                stripped_sentence = strip_stop_signs(stripped_sentence)
                 i = i + 1
                 print(f"Sentence <{stripped_sentence}>")
             if re.search(is_sentence, stripped_sentence):
@@ -173,7 +178,8 @@ def force_flush_sentence(sentence: str):
     if any(symbol in new_sentence for symbol in stop_signs):
         if  re.search(is_sentence,new_sentence):
             logger.info(f"phrase to flush (last) : {stripped_sentence}") 
-            httpx.post(f"{RHASSPY_URL}/api/text-to-speech", data=new_sentence.encode("utf-8"), headers=post_text_headers)
+            tts_response = httpx.post(f"{RHASSPY_URL}/api/text-to-speech", data=new_sentence.encode("utf-8"), headers=post_text_headers)
+            logger.info(" Processed with %s", tts_response.status_code)
         return ""
     else:
         return new_sentence

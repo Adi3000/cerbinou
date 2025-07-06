@@ -1,4 +1,5 @@
 import httpx
+import os
 from cachetools import cached, TTLCache
 
 params = {
@@ -11,7 +12,7 @@ params = {
   	"forecast_hours": 10,
     "forecast_days": 2
 }
-
+PREFERED_TEMPERATURE = float(os.getenv("LLAMA_TOP_P","19.0"))
 weather = TTLCache(maxsize=1, ttl=3600)
 
 @cached(weather)
@@ -22,25 +23,25 @@ def get_weather():
 
     current_weather = translate_weather_code(current["weather_code"])
     current_temperature = current["temperature_2m"] 
-    current_quote = f"La météo est actuellement {current_weather} avec une température de {current_temperature} degrés celsuis"
+    current_quote = f"La météo est actuellement {current_weather} avec une température de {current_temperature} degrés celsuis."
 
     today_min_temp = daily["apparent_temperature_min"][0]
     today_max_temp = daily["apparent_temperature_max"][0]
     today_weather = translate_weather_code(daily["weather_code"][0])
-    today_quote = f"Aujourd'hui la température sera entre {today_min_temp} et {today_max_temp} degrés celsuis avec une météo {today_weather}"
+    today_quote = f"Aujourd'hui la température sera entre {today_min_temp} et {today_max_temp} degrés celsuis avec une météo {today_weather}."
 
     tomorrow_min_temp = daily["apparent_temperature_min"][1]
     tomorrow_max_temp = daily["apparent_temperature_max"][1]
     tomorrow_weather = translate_weather_code(daily["weather_code"][1])
-    tomorrow_quote = f"Demain la température sera entre {tomorrow_min_temp} et {tomorrow_max_temp} degrés celsuis avec une météo {tomorrow_weather}"
+    tomorrow_quote = f"Demain, la température sera entre {tomorrow_min_temp} et {tomorrow_max_temp} degrés celsuis avec une météo {tomorrow_weather}."
 
     hourly = response["hourly"]
     hourly_min_temp = min(hourly["temperature_2m"])
     hourly_max_temp = max(hourly["temperature_2m"])
     hourly_rain = sum(hourly["rain"])
-    hourly_forcast = f"Dans les 10 prochaines heures les température seront entre {hourly_min_temp} et {hourly_max_temp} degrés celsuis, et les quantités de précipitations seront au total de {hourly_rain} mm"
+    hourly_forcast = f"Dans les 10 prochaines heures, les température seront entre {hourly_min_temp} et {hourly_max_temp} degrés celsuis, et il y aura {rain_level(hourly_rain)}."
 
-
+    weather_preferences = f"Une température idéal est une température de {PREFERED_TEMPERATURE} degrés celsuis"
 
     return f"{current_quote}\n{today_quote}\n{tomorrow_quote}\n{hourly_forcast}"
 
@@ -85,3 +86,13 @@ def translate_weather_code(weather_code: int):
     else:
         return "inconnue"
         
+def rain_level(rain_level: float):
+    if rain_level == 0:
+        "aucune pluie"
+    elif rain_level >= 2.5 and rain_level < 15:
+        "une pluie légère"
+    elif rain_level >= 15 and rain_level < 40:
+        "de la pluie"
+    elif rain_level >= 40:
+        "des pluie torrentielles"
+    

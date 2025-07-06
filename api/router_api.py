@@ -8,6 +8,7 @@ from intent.handle.prompt import intent_prompt
 from intent.classification.analyze import analyze_text
 from intent.models import IntentResponse, IntentRequest
 from intent.handle.nointent_consumer import nointent_connection
+from intent.handle.tts_over_command_consumer import tts_over_command_connection
 from hotword import handler
 from tts.openvoice import speech
 from asr.speech_to_text import parse_audio
@@ -21,7 +22,7 @@ import asyncio
 
 CERBINOU_PORT = int(os.getenv("CERBINOU_PORT", "9977"))
 MQTT_HOST = os.getenv("MQTT_HOST", "localhost")
-MQTT_PORT = int(os.getenv("MQTT_PORT", "12183"))
+MQTT_PORT = int(os.getenv("MQTT_PORT", "1883"))
 DATE_LOCALE = os.getenv("DATE_LOCALE", "fr_FR.UTF-8")
 HTTP_WORKERS = int(os.getenv("HTTP_WORKERS", "0"))
 locale.setlocale(locale.LC_TIME, DATE_LOCALE)
@@ -91,8 +92,11 @@ if __name__ == "__main__":
     wake_handler: Optional[any] = None
     no_intent_consumer: Optional[any]
     try:
+        tts_over_command_mqtt = tts_over_command_connection(MQTT_HOST, MQTT_PORT)
         no_intent_mqtt = nointent_connection(MQTT_HOST, MQTT_PORT)
+        tts_over_command_consumer = threading.Thread(target=tts_over_command_mqtt.loop_forever)
         no_intent_consumer = threading.Thread(target=no_intent_mqtt.loop_forever)
+        tts_over_command_consumer.start()
         no_intent_consumer.start()
 #        wake_handler = threading.Thread(target=handler.wake)
 #        wake_handler.start()

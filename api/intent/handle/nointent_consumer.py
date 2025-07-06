@@ -5,7 +5,6 @@ import json
 import logging
 
 logger = logging.getLogger(__name__)
-client = mqtt.Client()
 
 # Define the callback function for when a message is received
 def on_message(client: Client, userdata: any, message: MQTTMessage):

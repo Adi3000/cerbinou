@@ -1,7 +1,7 @@
 version: "3.8"
 services:
   openvoice-api:
-    image: openvoice-api-python
+    image: adi3000/openvoice-api-python:latest-gpu
     container_name: openvoice
     restart: unless-stopped
     runtime: nvidia
@@ -27,7 +27,7 @@ services:
       - /mnt/e/workspace/my-scripts/cerbinou/tts/speakers:/app/speakers:rw
       - /mnt/e/workspace/my-scripts/cerbinou/tts/processed:/app/processed:rw
   whisper:
-    image: onerahmet/openai-whisper-asr-webservice:v1.6.0-gpu
+    image: onerahmet/openai-whisper-asr-webservice:v1.9.0-gpu
     container_name: whisper
     restart: unless-stopped
     environment:
