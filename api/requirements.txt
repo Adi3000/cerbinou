@@ -8,3 +8,5 @@ pytest-mock
 pytest-asyncio
 pytest-dotenv
 cachetools
+ics
+pytz
