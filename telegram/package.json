@@ -1,0 +1,15 @@
+{
+  "scripts": {
+    "dev": "tsx --watch --env-file=.env index.ts",
+    "build": "tsc",
+    "start": "node --env-file=.env dist/index.js"
+  },
+  "dependencies": {
+    "telegraf": "^4.16.3",
+    "typescript": "^5.8.3"
+  },
+  "devDependencies": {
+    "@types/node": "^24.0.10",
+    "tsx": "^4.20.3"
+  }
+}

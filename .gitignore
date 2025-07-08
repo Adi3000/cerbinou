@@ -4,3 +4,5 @@ cerbinou/tts
 **/.env
 **/.vscode
 **/.venv
+**/node_modules
+**/dist
