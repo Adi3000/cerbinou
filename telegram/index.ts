@@ -20,9 +20,13 @@ bot.command('need', async (ctx) => {
     if (global.needed.length === 0) {
         await ctx.telegram.sendMessage(ctx.message.chat.id, "Il n'y a aucun élément dans la liste de course.")
     }
-    global.needed.forEach(async need => {
-        await ctx.telegram.sendMessage(ctx.message.chat.id, need)
-    })});
+    let message = 'À acheter :'
+    global.needed.forEach(need => {
+        message = `${message}\n  - ${need}`;
+    });
+    await ctx.telegram.sendMessage(ctx.message.chat.id, message);
+});
+    
 
 bot.command('done', async (ctx) => {
     global.needed.forEach(async need => {
