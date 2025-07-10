@@ -1,6 +1,7 @@
 import { Telegraf, Markup } from "telegraf";
+import { MaybeInaccessibleMessage, ReactionType } from "telegraf/typings/core/types/typegram";
 
-const bot = new Telegraf(process.env.BOT_TOKEN);
+const bot = new Telegraf(process.env.BOT_TOKEN as string);
 
 global.needed = ['carotte', 'banane'];
 
@@ -34,14 +35,20 @@ bot.command('done', async (ctx) => {
     })});
 
 bot.action('OK', (ctx, next) => {
-    const itemFound: string = ctx.update.callback_query.message?.text || '' ;
+    if (ctx.update.callback_query.message && !("text" in ctx.update.callback_query.message)) {
+        return next();
+    }
+    const itemFound: string = ctx.update.callback_query.message?.text ?? '' ;
     if (!itemFound || itemFound === '') return;
     const index = global.needed.indexOf(itemFound, 0);
     if (index > -1) {
         global.needed.splice(index, 1);
     }
-    const reaction = [{ type: 'emoji', emoji: '👍' }];
-    bot.telegram.setMessageReaction(ctx.update.callback_query.message?.chat.id, ctx.update.callback_query.message?.message_id, reaction)
+    const reaction: ReactionType[] = [{ type: 'emoji', emoji: '👍' }];
+    if (ctx.update.callback_query.message && !("chat" in ctx.update.callback_query.message)) {
+        return next();
+    }
+    bot.telegram.setMessageReaction(ctx.update.callback_query.message?.chat.id as number, ctx.update.callback_query.message?.message_id as number, reaction)
 })
  
 bot.launch();
