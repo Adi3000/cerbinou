@@ -3,7 +3,7 @@ import { MaybeInaccessibleMessage, ReactionType } from "telegraf/typings/core/ty
 
 const bot = new Telegraf(process.env.BOT_TOKEN as string);
 
-global.needed = ['carotte', 'banane'];
+global.needed = [];
 
 const buttonsReaction = Markup.inlineKeyboard([
     Markup.button.callback('✅', 'OK')
