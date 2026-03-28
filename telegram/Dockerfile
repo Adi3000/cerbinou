@@ -2,9 +2,9 @@ FROM node:22-alpine
 
 WORKDIR /app
 
-COPY package*.json ./
+COPY package*.json tsconfig.json *.ts ./
 
-RUN npm install
+RUN mkdir -p /data && npm install && npm run build
 
 COPY --chown=node:node . .
 

@@ -1,5 +1,7 @@
 import { Telegraf, Markup } from "telegraf";
 import { MaybeInaccessibleMessage, ReactionType } from "telegraf/typings/core/types/typegram";
+import * as fs from "fs";
+import * as path from "path";
 
 const bot = new Telegraf(process.env.BOT_TOKEN as string);
 
@@ -35,10 +37,15 @@ bot.command('done', async (ctx) => {
     })});
 
 bot.action('OK', (ctx, next) => {
-    if (ctx.update.callback_query.message && !("text" in ctx.update.callback_query.message)) {
+
+    const message = ctx.update.callback_query?.message;
+    if (!message || !("text" in message)) {
         return next();
     }
-    const itemFound: string = ctx.update.callback_query.message?.text ?? '' ;
+    
+    const itemFound: string = message.text ?? '';
+    if (!itemFound || itemFound === '') return;
+    
     if (!itemFound || itemFound === '') return;
     const index = global.needed.indexOf(itemFound, 0);
     if (index > -1) {
@@ -51,4 +58,42 @@ bot.action('OK', (ctx, next) => {
     bot.telegram.setMessageReaction(ctx.update.callback_query.message?.chat.id as number, ctx.update.callback_query.message?.message_id as number, reaction)
 })
  
-bot.launch();
+
+// Load needed items from file
+const loadGroceries = () => {
+    const filePath = process.env.CERBINOU_GROCERIES_LIST_FILE ?? '/data/list.txt';
+    try {
+        if (fs.existsSync(filePath)) {
+            const content = fs.readFileSync(filePath, 'utf-8');
+            global.needed = content.split('\n').filter(line => line.trim() !== '');
+        } else {
+            global.needed = [];
+        }
+    } catch (error) {
+        console.error('Error loading ', filePath, error);
+        global.needed = [];
+    }
+};
+
+const saveGroceries = () => {
+    const filePath = process.env.CERBINOU_GROCERIES_LIST_FILE ?? '/data/list.txt';
+    try {
+        fs.writeFileSync(filePath, global.needed.join('\n'), 'utf-8');
+    } catch (error) {
+        console.error('Error saving list.txt:', error);
+    }
+};
+
+loadGroceries();
+try {
+    process.once('SIGINT', () => bot.stop('SIGINT'));
+    process.once('SIGTERM', () => bot.stop('SIGTERM'));
+    bot.launch();
+    saveGroceries();
+    bot.stop('SIGTERM');
+} catch (error) {
+    console.error('Bot launch error:', error);
+    saveGroceries();
+    bot.stop('SIGINT');
+    throw error
+}

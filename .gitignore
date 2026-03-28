@@ -3,6 +3,7 @@
 cerbinou/tts
 **/.env
 **/.vscode
+tts/processed/*
 **/.venv
 **/node_modules
 **/dist
