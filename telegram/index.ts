@@ -94,6 +94,10 @@ try {
 } catch (error) {
     console.error('Bot launch error:', error);
     saveGroceries();
-    bot.stop('SIGINT');
+    try {
+        bot.stop('SIGINT');
+    } catch (stopError) {
+        console.error('Bot cannot be stopped, it may have not run at first');
+    }
     throw error
 }
