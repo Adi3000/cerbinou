@@ -90,7 +90,6 @@ try {
     process.once('SIGTERM', () => bot.stop('SIGTERM'));
     bot.launch();
     saveGroceries();
-    bot.stop('SIGTERM');
 } catch (error) {
     console.error('Bot launch error:', error);
     saveGroceries();
