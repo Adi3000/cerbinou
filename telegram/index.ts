@@ -1,5 +1,5 @@
 import { Telegraf, Markup } from "telegraf";
-import { MaybeInaccessibleMessage, ReactionType } from "telegraf/typings/core/types/typegram";
+import type { ReactionType } from "telegraf/types";
 import * as fs from "fs";
 import * as path from "path";
 
